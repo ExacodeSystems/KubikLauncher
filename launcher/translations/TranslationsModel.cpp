@@ -54,6 +54,16 @@
 
 static constexpr QLatin1String g_defaultLangCode("en_US");
 
+// KubikLauncher speaks English and Indonesian, and nothing else. With no TRANSLATION_FILES_URL both
+// ship inside the app (":/kubik/i18n/prism_<key>.qm", compiled from resources/kubik/i18n), so
+// nothing is downloaded and the translation is there offline and from the very first start.
+static const QStringList g_kubikLanguages = { g_defaultLangCode, QStringLiteral("id") };
+
+static bool bundledTranslations()
+{
+    return BuildConfig.TRANSLATION_FILES_URL.isEmpty();
+}
+
 namespace {
 enum class FileType : std::uint8_t { None, Qm, Po };
 
@@ -166,6 +176,8 @@ struct TranslationsModel::Private {
     QString m_selectedLanguage = g_defaultLangCode;
     std::unique_ptr<QTranslator> m_qtTranslator;
     std::unique_ptr<QTranslator> m_appTranslator;
+    // KubikLauncher's own strings, the Prism strings it reworded, and English plural forms.
+    std::unique_ptr<QTranslator> m_kubikTranslator;
 
     Net::Request* m_indexTask = nullptr;
     QString m_downloadingTranslation;
@@ -185,6 +197,16 @@ TranslationsModel::TranslationsModel(const QString& path, QObject* parent) : QAb
     d->m_selectedLanguage = APPLICATION->settings()->get("Language").toString();
     FS::ensureFolderPathExists(path);
     reloadLocalFiles();
+    if (bundledTranslations()) {
+        // Nothing to wait for, so the language is applied now. On a first start (no setting yet)
+        // that is Indonesian on an Indonesian system and English everywhere else; the setup
+        // wizard's language page still asks, with this one chosen.
+        QString language = d->m_selectedLanguage;
+        if (language.isEmpty()) {
+            language = QLocale::system().language() == QLocale::Indonesian ? QStringLiteral("id") : QString(g_defaultLangCode);
+        }
+        selectLanguage(language);
+    }
 
     d->watcher = new QFileSystemWatcher(this);
     connect(d->watcher, &QFileSystemWatcher::directoryChanged, this, &TranslationsModel::translationDirChanged);
@@ -265,38 +287,52 @@ void TranslationsModel::reloadLocalFiles()
 {
     QMap<QString, Language> languages = { { g_defaultLangCode, Language(g_defaultLangCode) } };
 
-    const auto indexPath = d->m_dir.absoluteFilePath("index_v2.json");
-    if (!QFileInfo::exists(indexPath)) {
-        downloadIndex();
-        return;
-    }
-    readIndex(indexPath, languages);
-    auto entries = d->m_dir.entryInfoList({ "mmc_*.qm", "*.po" }, QDir::Files | QDir::NoDotAndDotDot);
-    for (auto& entry : entries) {
-        auto completeSuffix = entry.completeSuffix();
-        QString langCode;
-        FileType fileType = FileType::None;
-        if (completeSuffix == "qm") {
-            langCode = entry.baseName().remove(0, 4);
-            fileType = FileType::Qm;
-        } else if (completeSuffix == "po") {
-            langCode = entry.baseName();
-            fileType = FileType::Po;
-        } else {
-            continue;
-        }
-
-        auto langIter = languages.find(langCode);
-        if (langIter != languages.end()) {
-            auto& language = *langIter;
-            language.localFileType = std::max(fileType, language.localFileType);
-        } else {
-            if (fileType == FileType::Po) {
-                Language localFound(langCode);
-                localFound.localFileType = FileType::Po;
-                languages.insert(langCode, localFound);
+    if (bundledTranslations()) {
+        for (const auto& key : g_kubikLanguages) {
+            if (key != g_defaultLangCode) {
+                Language bundled(key);
+                bundled.localFileType = FileType::Qm;
+                languages.insert(key, bundled);
             }
         }
+    } else {
+        const auto indexPath = d->m_dir.absoluteFilePath("index_v2.json");
+        if (!QFileInfo::exists(indexPath)) {
+            downloadIndex();
+            return;
+        }
+        readIndex(indexPath, languages);
+        auto entries = d->m_dir.entryInfoList({ "mmc_*.qm", "*.po" }, QDir::Files | QDir::NoDotAndDotDot);
+        for (auto& entry : entries) {
+            auto completeSuffix = entry.completeSuffix();
+            QString langCode;
+            FileType fileType = FileType::None;
+            if (completeSuffix == "qm") {
+                langCode = entry.baseName().remove(0, 4);
+                fileType = FileType::Qm;
+            } else if (completeSuffix == "po") {
+                langCode = entry.baseName();
+                fileType = FileType::Po;
+            } else {
+                continue;
+            }
+
+            auto langIter = languages.find(langCode);
+            if (langIter != languages.end()) {
+                auto& language = *langIter;
+                language.localFileType = std::max(fileType, language.localFileType);
+            } else {
+                if (fileType == FileType::Po) {
+                    Language localFound(langCode);
+                    localFound.localFileType = FileType::Po;
+                    languages.insert(langCode, localFound);
+                }
+            }
+        }
+    }
+    // Whatever the index offers, the launcher speaks only its two languages.
+    for (auto it = languages.begin(); it != languages.end();) {
+        it = g_kubikLanguages.contains(it.key()) ? std::next(it) : languages.erase(it);
     }
 
     // changed and removed languages
@@ -465,6 +501,19 @@ bool TranslationsModel::selectLanguage(QString key) const
         QCoreApplication::removeTranslator(d->m_qtTranslator.get());
         d->m_qtTranslator.reset();
     }
+    if (d->m_kubikTranslator) {
+        QCoreApplication::removeTranslator(d->m_kubikTranslator.get());
+        d->m_kubikTranslator.reset();
+    }
+    // Installed last so it is consulted first: Qt asks the most recently installed translator first.
+    const auto installKubikTranslator = [this](const QString& code) {
+        d->m_kubikTranslator = std::make_unique<QTranslator>();
+        const QString file = code == g_defaultLangCode ? QStringLiteral("kubik_en") : "kubik_" + code;
+        if (!d->m_kubikTranslator->load(file, ":/kubik/i18n") || !QCoreApplication::installTranslator(d->m_kubikTranslator.get())) {
+            qWarning() << "Loading the KubikLauncher translation failed for" << code;
+            d->m_kubikTranslator.reset();
+        }
+    };
 
     /*
      * FIXME: potential source of crashes:
@@ -477,6 +526,7 @@ bool TranslationsModel::selectLanguage(QString key) const
     // if it's the default UI language, finish
     if (langCode == g_defaultLangCode) {
         d->m_selectedLanguage = langCode;
+        installKubikTranslator(langCode);
         return true;
     }
 
@@ -512,7 +562,9 @@ bool TranslationsModel::selectLanguage(QString key) const
         }
     } else if (langPtr->localFileType == FileType::Qm) {
         d->m_appTranslator = std::make_unique<QTranslator>();
-        if (d->m_appTranslator->load("mmc_" + langCode, d->m_dir.path())) {
+        const bool loaded = bundledTranslations() ? d->m_appTranslator->load("prism_" + langCode, ":/kubik/i18n")
+                                                  : d->m_appTranslator->load("mmc_" + langCode, d->m_dir.path());
+        if (loaded) {
             qDebug() << "Loading Application Language File for" << langCode.toLocal8Bit().constData() << "...";
             if (!QCoreApplication::installTranslator(d->m_appTranslator.get())) {
                 qCritical() << "Installing Application Language File failed.";
@@ -527,6 +579,7 @@ bool TranslationsModel::selectLanguage(QString key) const
         d->m_appTranslator.reset();
     }
     d->m_selectedLanguage = langCode;
+    installKubikTranslator(langCode);
     return successful;
 }
 
@@ -546,7 +599,7 @@ QString TranslationsModel::selectedLanguage() const
 
 void TranslationsModel::downloadIndex()
 {
-    if (d->m_indexJob || d->m_downloadJob) {
+    if (bundledTranslations() || d->m_indexJob || d->m_downloadJob) {
         return;
     }
     qDebug() << "Downloading Translations Index...";
@@ -564,6 +617,9 @@ void TranslationsModel::downloadIndex()
 
 void TranslationsModel::updateLanguage(const QString& key)
 {
+    if (bundledTranslations()) {
+        return;  // built into the app; nothing to download
+    }
     if (key == g_defaultLangCode) {
         qWarning() << "Cannot update builtin language" << key;
         return;

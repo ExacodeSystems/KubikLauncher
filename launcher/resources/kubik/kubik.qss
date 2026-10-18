@@ -1,0 +1,509 @@
+/*
+ * KubikLauncher: the launcher's look, in Qt Style Sheets.
+ *
+ * Names between at-signs are filled in by KubikTheme::appStyleSheet: palette
+ * colours by their Tailwind names (void.panel, grass.deep, ...) and the three
+ * bundled faces (font.display, font.body, font.mono).
+ *
+ * The rules, and why:
+ *   - No borders, no rules, no bevels. Surfaces are told apart by a step in
+ *     tone: void (the ground) < void.raised (the rail) < void.panel (tiles,
+ *     fields, quiet buttons) < block (hover). A line between two things is
+ *     replaced by a change of tone or by space.
+ *   - One accent. Grass fills the primary action (Play, "New instance", the
+ *     default button) and marks the current page. Heart is for Stop and Delete.
+ *   - The one outline that survives is focus: a grass ring on whatever the
+ *     keyboard is on, because without it the app cannot be used without a mouse.
+ *   - Corners: 4px on controls, 6px on tiles and panels.
+ *
+ * Combo boxes and spin boxes keep Fusion's drawing (giving them a QSS border
+ * makes Qt stop drawing their arrows); KubikTheme's palette makes their Fusion
+ * edges the same tone as their fill, which is what takes the outline away.
+ */
+
+* {
+    outline: none;
+}
+
+QAbstractScrollArea,
+QFrame {
+    border: none;
+}
+
+QToolTip {
+    color: @bone@;
+    background-color: @block@;
+    border: none;
+    padding: 5px 8px;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+QPushButton {
+    color: @bone@;
+    background-color: @void.panel@;
+    border: none;
+    border-radius: 4px;
+    padding: 7px 16px;
+    min-height: 20px;
+    font-family: "@font.display@";
+    font-weight: 600;
+}
+
+QPushButton:hover {
+    background-color: @block@;
+}
+
+QPushButton:pressed,
+QPushButton:checked {
+    background-color: @void.raised@;
+}
+
+QPushButton:focus {
+    border: 2px solid @grass.deep@;
+    padding: 5px 14px;
+}
+
+/* The default action: the one filled green thing on a screen. */
+QPushButton:default,
+QPushButton[kubikRole="primary"] {
+    color: @void@;
+    background-color: @grass@;
+}
+
+QPushButton:default:hover,
+QPushButton[kubikRole="primary"]:hover {
+    background-color: @grass.mid@;
+}
+
+QPushButton:default:pressed,
+QPushButton[kubikRole="primary"]:pressed {
+    background-color: @grass.deep@;
+}
+
+QPushButton[kubikRole="danger"] {
+    color: @void@;
+    background-color: @heart@;
+}
+
+QPushButton[kubikRole="danger"]:hover {
+    background-color: @heart.deep@;
+}
+
+/* A button that reads as a link: back, "Open folder", rows in a list. */
+QPushButton[kubikRole="quiet"] {
+    color: @bone.muted@;
+    background-color: transparent;
+}
+
+QPushButton[kubikRole="quiet"]:hover {
+    color: @bone@;
+    background-color: @void.panel@;
+}
+
+QPushButton:disabled,
+QPushButton:default:disabled {
+    color: @bone.faint@;
+    background-color: @void.raised@;
+}
+
+QPushButton::menu-indicator {
+    subcontrol-position: right center;
+    right: 8px;
+}
+
+QToolButton {
+    color: @bone@;
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QToolButton:hover {
+    background-color: @block@;
+}
+
+QToolButton:pressed,
+QToolButton:checked {
+    background-color: @void.panel@;
+}
+
+/* ── Fields ─────────────────────────────────────────────────────────────── */
+
+QLineEdit,
+QPlainTextEdit,
+QTextEdit,
+QTextBrowser {
+    color: @bone@;
+    background-color: @void.panel@;
+    border: 2px solid @void.panel@;
+    border-radius: 4px;
+    padding: 4px 8px;
+    selection-background-color: rgba(52, 211, 153, 0.28);
+    selection-color: @bone@;
+}
+
+QLineEdit:hover,
+QPlainTextEdit:hover,
+QTextEdit:hover {
+    border-color: @block@;
+}
+
+QLineEdit:focus,
+QPlainTextEdit:focus,
+QTextEdit:focus {
+    border-color: @grass.deep@;
+}
+
+QLineEdit:disabled {
+    color: @bone.faint@;
+}
+
+QProgressBar {
+    color: @bone@;
+    background-color: @void.panel@;
+    border: none;
+    border-radius: 4px;
+    text-align: center;
+    min-height: 8px;
+}
+
+QProgressBar::chunk {
+    background-color: @grass@;
+    border-radius: 4px;
+}
+
+/* ── Lists, tables, trees ───────────────────────────────────────────────── */
+
+QAbstractItemView {
+    background-color: @void@;
+    alternate-background-color: @void.raised@;
+    selection-background-color: @block@;
+    selection-color: @bone@;
+}
+
+QAbstractItemView::item {
+    padding: 4px 6px;
+}
+
+QAbstractItemView::item:hover {
+    background-color: @void.panel@;
+}
+
+QAbstractItemView::item:selected {
+    color: @bone@;
+    background-color: @block@;
+}
+
+QHeaderView,
+QHeaderView::section {
+    color: @bone.muted@;
+    background-color: @void@;
+    border: none;
+    padding: 3px 8px;
+    font-weight: 600;
+}
+
+/* ── Check boxes and radio buttons: filled shapes that read on the dark ground ── */
+
+QCheckBox::indicator,
+QGroupBox::indicator,
+QAbstractItemView::indicator,
+QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    background-color: @block@;
+    border: none;
+    border-radius: 4px;
+}
+
+QRadioButton::indicator {
+    border-radius: 8px;
+}
+
+QCheckBox::indicator:hover,
+QRadioButton::indicator:hover {
+    background-color: @block.edge@;
+}
+
+QCheckBox::indicator:checked,
+QGroupBox::indicator:checked,
+QAbstractItemView::indicator:checked {
+    background-color: @grass@;
+    image: url(:/kubik/check.svg);
+}
+
+QCheckBox::indicator:indeterminate {
+    background-color: @grass.deep@;
+}
+
+/* A selected radio is a grass ring around a dark dot: 5 + 6 + 5 = the same 16px. */
+QRadioButton::indicator:checked {
+    background-color: @void@;
+    border: 5px solid @grass@;
+    width: 6px;
+    height: 6px;
+}
+
+QCheckBox::indicator:disabled,
+QRadioButton::indicator:disabled {
+    background-color: @void.panel@;
+}
+
+QTableCornerButton::section {
+    background-color: @void@;
+    border: none;
+}
+
+/* ── Bars and menus ─────────────────────────────────────────────────────── */
+
+QMenuBar {
+    background-color: @void.raised@;
+}
+
+QMenuBar::item:selected {
+    background-color: @block@;
+}
+
+QToolBar {
+    background-color: @void.raised@;
+    border: none;
+    spacing: 4px;
+    padding: 6px;
+}
+
+QToolBar QToolButton {
+    padding: 6px 10px;
+    font-family: "@font.display@";
+    font-weight: 600;
+}
+
+QStatusBar {
+    color: @bone.muted@;
+    background-color: @void.raised@;
+    border: none;
+}
+
+/* Menus float, so they are the one surface with a shadow: the OS draws it. */
+QMenu {
+    color: @bone@;
+    background-color: @void.panel@;
+    border: none;
+    padding: 6px;
+}
+
+QMenu::item {
+    padding: 7px 28px 7px 28px;
+    border-radius: 4px;
+}
+
+QMenu::item:selected {
+    background-color: @block@;
+}
+
+QMenu::item:disabled {
+    color: @bone.faint@;
+}
+
+QMenu::separator {
+    height: 6px;
+    background: transparent;
+}
+
+/* ── Tabs, groups ───────────────────────────────────────────────────────── */
+
+QTabWidget::pane {
+    background-color: transparent;
+    border: none;
+}
+
+QTabBar::tab {
+    color: @bone.muted@;
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 14px;
+    margin-right: 4px;
+    font-family: "@font.display@";
+    font-weight: 600;
+}
+
+QTabBar::tab:selected {
+    color: @bone@;
+    border-bottom-color: @grass@;
+}
+
+QTabBar::tab:hover:!selected {
+    color: @bone@;
+}
+
+/* A group box is a heading and the space under it, not a box. */
+QGroupBox {
+    border: none;
+    margin-top: 22px;
+    padding-top: 4px;
+    font-family: "@font.display@";
+    font-weight: 600;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 0;
+    padding: 0;
+    color: @bone@;
+}
+
+/* ── Scroll bars: a handle, no track ────────────────────────────────────── */
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 2px;
+    border: none;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 10px;
+    margin: 2px;
+    border: none;
+}
+
+QScrollBar::handle:vertical {
+    background-color: @block@;
+    min-height: 32px;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: @block@;
+    min-width: 32px;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:hover {
+    background-color: @block.edge@;
+}
+
+QScrollBar::add-line,
+QScrollBar::sub-line {
+    width: 0;
+    height: 0;
+}
+
+QScrollBar::add-page,
+QScrollBar::sub-page {
+    background: none;
+}
+
+/* ── The shell (ui/kubik/) ──────────────────────────────────────────────── */
+
+#kubikSidebar {
+    background-color: @void.raised@;
+}
+
+#kubikBrandName {
+    color: @bone@;
+    font-family: "@font.display@";
+    font-size: 19px;
+    font-weight: 700;
+}
+
+/* Rail rows: no frame, a filled row for the current page with a grass bar on
+   its left edge (a filled shape, not a rule). */
+#kubikSidebar QPushButton {
+    color: @bone.muted@;
+    background-color: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+    padding: 10px 16px 10px 15px;
+    text-align: left;
+    font-family: "@font.display@";
+    font-size: 15px;
+    font-weight: 600;
+}
+
+#kubikSidebar QPushButton:hover {
+    color: @bone@;
+    background-color: @void.panel@;
+}
+
+#kubikSidebar QPushButton:checked {
+    color: @bone@;
+    background-color: @void.panel@;
+    border-left-color: @grass@;
+}
+
+#kubikSidebar QPushButton::menu-indicator {
+    image: none;
+    width: 0;
+}
+
+/* The account row holds a player name or "Add Microsoft account", which runs long in Indonesian. */
+#kubikSidebar QPushButton#kubikAccountChip {
+    color: @bone@;
+    font-family: "@font.body@";
+    font-size: 14px;
+    font-weight: 600;
+}
+
+#kubikPage {
+    background-color: @void@;
+}
+
+#kubikPageTitle {
+    color: @bone@;
+    font-family: "@font.display@";
+    font-size: 28px;
+    font-weight: 700;
+}
+
+#kubikPageSubtitle,
+#kubikPageBody {
+    color: @bone.muted@;
+    font-size: 14px;
+}
+
+#kubikSectionTitle {
+    color: @bone@;
+    font-family: "@font.display@";
+    font-size: 16px;
+    font-weight: 600;
+}
+
+#kubikSearch {
+    min-width: 220px;
+    padding: 6px 10px;
+}
+
+QPushButton#kubikHeroPlay {
+    font-size: 15px;
+    font-weight: 700;
+    padding: 12px 36px;
+    min-width: 120px;
+}
+
+/* A row in the instance page's "Manage" list: a quiet block that lights up. */
+QPushButton[kubikRole="row"] {
+    color: @bone@;
+    background-color: @void.panel@;
+    border-radius: 6px;
+    padding: 14px 16px;
+    /* Two lines of text inside. A style-sheet min-height beats setMinimumHeight(), so it lives here. */
+    min-height: 48px;
+    text-align: left;
+    font-family: "@font.body@";
+    font-weight: 400;
+}
+
+QPushButton[kubikRole="row"]:hover {
+    background-color: @block@;
+}
+
+#kubikArt {
+    background-color: @void.panel@;
+    border-radius: 6px;
+}

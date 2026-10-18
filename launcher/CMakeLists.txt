@@ -850,6 +850,8 @@ SET(LAUNCHER_SOURCES
     ui/setupwizard/LoginWizardPage.h
 
     # GUI - themes
+    ui/themes/KubikTheme.cpp
+    ui/themes/KubikTheme.h
     ui/themes/FusionTheme.cpp
     ui/themes/FusionTheme.h
     ui/themes/BrightTheme.cpp
@@ -872,6 +874,25 @@ SET(LAUNCHER_SOURCES
     ui/themes/CatPack.h
     ui/themes/CatPainter.cpp
     ui/themes/CatPainter.h
+
+    # KubikLauncher
+    kubik/KubikBrand.cpp
+    kubik/KubikBrand.h
+    kubik/KubikSnapshot.cpp
+    kubik/KubikSnapshot.h
+    kubik/KubikWindowChrome.h
+    ui/kubik/KubikHomePage.cpp
+    ui/kubik/KubikHomePage.h
+    ui/kubik/KubikInstanceDelegate.cpp
+    ui/kubik/KubikInstanceDelegate.h
+    ui/kubik/KubikInstanceInfo.cpp
+    ui/kubik/KubikInstanceInfo.h
+    ui/kubik/KubikInstancePage.cpp
+    ui/kubik/KubikInstancePage.h
+    ui/kubik/KubikServersPage.cpp
+    ui/kubik/KubikServersPage.h
+    ui/kubik/KubikSidebar.cpp
+    ui/kubik/KubikSidebar.h
 
     # Processes
     LaunchMode.h
@@ -1165,6 +1186,12 @@ if (APPLE)
     set(LAUNCHER_SOURCES
         ${LAUNCHER_SOURCES}
         ui/themes/ThemeManager.mm
+        kubik/KubikWindowChrome.mm
+    )
+else()
+    set(LAUNCHER_SOURCES
+        ${LAUNCHER_SOURCES}
+        kubik/KubikWindowChrome.cpp
     )
 endif()
 
@@ -1207,6 +1234,7 @@ qt_add_resources(LAUNCHER_RESOURCES
     resources/flat_white/flat_white.qrc
     resources/documents/documents.qrc
     resources/shaders/shaders.qrc
+    resources/kubik/kubik.qrc
     "${CMAKE_CURRENT_BINARY_DIR}/../${Launcher_Branding_LogoQRC}"
 )
 
@@ -1287,6 +1315,10 @@ target_link_libraries(Launcher_logic
     LocalPeer
     Launcher_rainbow
 )
+if(WIN32)
+    # KubikWindowChrome: the dark, rail-coloured native caption on Windows 11.
+    target_link_libraries(Launcher_logic dwmapi)
+endif()
 if (TARGET ${Launcher_QT_DBUS})
     target_compile_definitions(Launcher_logic PUBLIC WITH_QTDBUS)
 endif()

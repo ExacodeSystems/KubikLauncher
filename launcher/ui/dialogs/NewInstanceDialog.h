@@ -60,6 +60,8 @@ class NewInstanceDialog : public QDialog, public BasePageProvider {
     ~NewInstanceDialog() override;
 
     void updateDialogState();
+    /** Opens on one of the pages ("vanilla", "modrinth", "import"). */
+    void selectPage(const QString& pageId);
 
     void setSuggestedPack(const QString& name = QString(), InstanceTask* task = nullptr);
     void setSuggestedPack(const QString& name, QString version, InstanceTask* task = nullptr);

@@ -312,15 +312,13 @@ void MinecraftInstance::populateLaunchMenu(QMenu* menu)
 {
     QAction* normalLaunch = menu->addAction(tr("&Launch"));
     normalLaunch->setShortcut(QKeySequence::Open);
-    QAction* normalLaunchOffline = menu->addAction(tr("Launch &Offline"));
-    normalLaunchOffline->setShortcut(QKeySequence(tr("Ctrl+Shift+O")));
+    // No "Launch Offline": KubikLauncher plays online only (LaunchController::login refuses it).
     QAction* normalLaunchDemo = menu->addAction(tr("Launch &Demo"));
     normalLaunchDemo->setShortcut(QKeySequence(tr("Ctrl+Alt+O")));
 
     normalLaunchDemo->setEnabled(supportsDemo());
 
     connect(normalLaunch, &QAction::triggered, this, [this] { APPLICATION->launch(this); });
-    connect(normalLaunchOffline, &QAction::triggered, this, [this] { APPLICATION->launch(this, LaunchMode::Offline); });
     connect(normalLaunchDemo, &QAction::triggered, this, [this] { APPLICATION->launch(this, LaunchMode::Demo); });
 
     auto accounts = APPLICATION->accounts();

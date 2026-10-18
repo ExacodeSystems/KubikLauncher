@@ -1,0 +1,24 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/kubik">
+        <!-- Generated in the kubik.gg repo by the art:launcher script in apps/mobile. -->
+        <file>tokens.json</file>
+        <file>kubik.qss</file>
+        <file>check.svg</file>
+        <!-- The website's three faces, under the SIL Open Font License (fonts/OFL-*.txt). -->
+        <file>fonts/ChakraPetch-Medium.ttf</file>
+        <file>fonts/ChakraPetch-SemiBold.ttf</file>
+        <file>fonts/ChakraPetch-Bold.ttf</file>
+        <file>fonts/HankenGrotesk[wght].ttf</file>
+        <file>fonts/JetBrainsMono[wght].ttf</file>
+        <file>fonts/OFL-ChakraPetch.txt</file>
+        <file>fonts/OFL-HankenGrotesk.txt</file>
+        <file>fonts/OFL-JetBrainsMono.txt</file>
+    </qresource>
+    <!-- English and Indonesian, compiled by i18n/build.sh (TranslationsModel's bundled mode). -->
+    <qresource prefix="/kubik/i18n">
+        <file alias="prism_id.qm">i18n/prism_id.qm</file>
+        <file alias="kubik_id.qm">i18n/kubik_id.qm</file>
+        <file alias="kubik_en.qm">i18n/kubik_en.qm</file>
+    </qresource>
+</RCC>

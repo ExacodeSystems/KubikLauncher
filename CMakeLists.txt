@@ -180,16 +180,21 @@ endif()
 ##################################### Set Application options #####################################
 
 ######## Set URLs ########
-set(Launcher_NEWS_RSS_URL "https://prismlauncher.org/feed/feed.xml" CACHE STRING "URL to fetch Prism Launcher's news RSS feed from.")
-set(Launcher_NEWS_OPEN_URL "https://prismlauncher.org/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
-set(Launcher_WIKI_URL "https://prismlauncher.org/wiki/" CACHE STRING "URL that gets opened when the user clicks 'Launcher Help'")
+# kubik.gg has no RSS feed yet; empty hides the news toolbar (MainWindow.cpp) instead of showing a fetch error.
+set(Launcher_NEWS_RSS_URL "" CACHE STRING "URL to fetch the launcher's news RSS feed from.")
+set(Launcher_NEWS_OPEN_URL "https://kubik.gg/blog" CACHE STRING "URL that gets opened when the user clicks 'More News'")
+set(Launcher_WIKI_URL "https://kubik.gg/guides" CACHE STRING "URL that gets opened when the user clicks 'Launcher Help'")
+# Per-page help still points at Prism's wiki: those pages document the upstream features we inherit and
+# have no kubik.gg equivalent yet. Replace once we write our own.
 set(Launcher_HELP_URL "https://prismlauncher.org/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help in a dialog window")
-set(Launcher_LOGIN_CALLBACK_URL "https://prismlauncher.org/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
+set(Launcher_LOGIN_CALLBACK_URL "https://kubik.gg/launcher/signed-in" CACHE STRING "URL that gets opened when the user successfully logins.")
 set(Launcher_LEGACY_FMLLIBS_BASE_URL "https://files.prismlauncher.org/fmllibs/" CACHE STRING "URL for legacy (<=1.5.2) FML Libraries.")
 
 ######## Set version numbers ########
-set(Launcher_VERSION_MAJOR 12)
-set(Launcher_VERSION_MINOR 0)
+# KubikLauncher's own version (based on Prism Launcher 12.0.0). The updater compares it with our
+# release tags, so it must never borrow Prism's numbers.
+set(Launcher_VERSION_MAJOR 0)
+set(Launcher_VERSION_MINOR 1)
 set(Launcher_VERSION_PATCH 0)
 
 set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}")
@@ -200,32 +205,36 @@ set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_M
 set(Launcher_BUILD_PLATFORM "unknown" CACHE STRING "A short string identifying the platform that this build was built for. Only used to display in the about dialog.")
 
 # Github repo URL with releases for updater
-set(Launcher_UPDATER_GITHUB_REPO "https://github.com/PrismLauncher/PrismLauncher" CACHE STRING "Base github URL for the updater.")
+set(Launcher_UPDATER_GITHUB_REPO "https://github.com/ExacodeSystems/KubikLauncher" CACHE STRING "Base github URL for the updater.")
 
 # Name to help updater identify valid artifacts
 set(Launcher_BUILD_ARTIFACT "" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
 
-# The metadata server
+# The metadata server. Still Prism's: we have asked whether a branded fork may use it, and the
+# fallback is self-hosting PrismLauncher/meta (KubikLauncher plan, Section 2, in the kubik.gg repo).
 set(Launcher_META_URL "https://meta.prismlauncher.org/v1/" CACHE STRING "URL to fetch Launcher's meta files from.")
 
 # Imgur API Client ID
-set(Launcher_IMGUR_CLIENT_ID "5b97b0713fba4a3" CACHE STRING "Client ID you can get from Imgur when you register an application")
+set(Launcher_IMGUR_CLIENT_ID "" CACHE STRING "Client ID you can get from Imgur when you register an application")
 
 # Bug tracker URL
-set(Launcher_BUG_TRACKER_URL "https://github.com/PrismLauncher/PrismLauncher/issues" CACHE STRING "URL for the bug tracker.")
+set(Launcher_BUG_TRACKER_URL "https://github.com/ExacodeSystems/KubikLauncher/issues" CACHE STRING "URL for the bug tracker.")
 
 # Translations Platform URL
-set(Launcher_TRANSLATIONS_URL "https://hosted.weblate.org/projects/prismlauncher/launcher/" CACHE STRING "URL for the translations platform.")
-set(Launcher_TRANSLATION_FILES_URL "https://i18n.prismlauncher.org/" CACHE STRING "URL for the translations files.")
+# Empty: KubikLauncher speaks English and Indonesian only, and both are built into the app from
+# launcher/resources/kubik/i18n (TranslationsModel's bundled mode), so nothing is downloaded and
+# there is no translation platform to send people to.
+set(Launcher_TRANSLATIONS_URL "" CACHE STRING "URL for the translations platform.")
+set(Launcher_TRANSLATION_FILES_URL "" CACHE STRING "URL for the translations files.")
 
 # Matrix Space
-set(Launcher_MATRIX_URL "https://prismlauncher.org/matrix" CACHE STRING "URL to the Matrix Space")
+set(Launcher_MATRIX_URL "" CACHE STRING "URL to the Matrix Space")
 
 # Discord URL
-set(Launcher_DISCORD_URL "https://prismlauncher.org/discord" CACHE STRING "URL for the Discord guild.")
+set(Launcher_DISCORD_URL "" CACHE STRING "URL for the Discord guild.")
 
 # Subreddit URL
-set(Launcher_SUBREDDIT_URL "https://prismlauncher.org/reddit" CACHE STRING "URL for the subreddit.")
+set(Launcher_SUBREDDIT_URL "" CACHE STRING "URL for the subreddit.")
 
 # Builds
 set(Launcher_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build against")
@@ -269,13 +278,17 @@ endif()
 
 # By using this key in your builds you accept the terms of use laid down in
 # https://docs.microsoft.com/en-us/legal/microsoft-identity-platform/terms-of-use
-set(Launcher_MSA_CLIENT_ID "c36a9fb6-4f2a-41ff-90bd-ae7cc92031eb" CACHE STRING "Client ID you can get from Microsoft Identity Platform when you register an application")
+# KubikLauncher's own Azure app (tenant PT Exacode Systems Technologies). Mojang's AppID review was
+# submitted 2026-10-18; until it is approved, sign-in fails at login_with_xbox with a 403.
+set(Launcher_MSA_CLIENT_ID "6c61c8e5-a850-4a33-bac1-9a6c5bd7a16a" CACHE STRING "Client ID you can get from Microsoft Identity Platform when you register an application")
 
 # By using this key in your builds you accept the terms and conditions laid down in
 # https://support.curseforge.com/en/support/solutions/articles/9000207405-curse-forge-3rd-party-api-terms-and-conditions
 # NOTE: CurseForge requires you to change this if you make any kind of derivative work.
 # This key was issued specifically for Prism Launcher
-set(Launcher_CURSEFORGE_API_KEY "$2a$10$wuAJuNZuted3NORVmpgUC.m8sI.pv1tOPKZyBgLFGjxFp/br0lZCC" CACHE STRING "API key for the CurseForge platform")
+# Empty: the key was issued to Prism, CurseForge requires derivatives to change it, and an empty key
+# switches the CurseForge features off (Application::updateCapabilities). Modrinth only, for now.
+set(Launcher_CURSEFORGE_API_KEY "" CACHE STRING "API key for the CurseForge platform")
 
 set(Launcher_COMPILER_NAME ${CMAKE_CXX_COMPILER_ID})
 set(Launcher_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
@@ -381,7 +394,7 @@ include(ECMQtDeclareLoggingCategory)
 
 ####################################### Program Info #######################################
 
-set(Launcher_APP_BINARY_NAME "prismlauncher" CACHE STRING "Name of the Launcher binary")
+set(Launcher_APP_BINARY_NAME "kubiklauncher" CACHE STRING "Name of the Launcher binary")
 add_subdirectory(program_info)
 
 ####################################### Install layout #######################################
@@ -415,8 +428,10 @@ if(UNIX AND APPLE)
     set(MACOSX_BUNDLE_LONG_VERSION_STRING "${Launcher_VERSION_NAME}")
     set(MACOSX_BUNDLE_ICON_FILE ${Launcher_Name}.icns)
     set(MACOSX_BUNDLE_COPYRIGHT "${Launcher_Copyright_Mac}")
-    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "v55ZWWD6QlPoXGV6VLzOTZxZUggWeE51X8cRQyQh6vA=" CACHE STRING "Public key for Sparkle update feed")
-    set(MACOSX_SPARKLE_UPDATE_FEED_URL "https://prismlauncher.org/feed/appcast.xml" CACHE STRING "URL for Sparkle update feed")
+    # Empty until we have our own feed and key. Prism's would offer Prism's releases as updates and
+    # replace KubikLauncher with Prism Launcher; empty disables the macOS updater instead.
+    set(MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "" CACHE STRING "Public key for Sparkle update feed")
+    set(MACOSX_SPARKLE_UPDATE_FEED_URL "" CACHE STRING "URL for Sparkle update feed")
 
     set(MACOSX_SPARKLE_DOWNLOAD_URL "https://github.com/sparkle-project/Sparkle/releases/download/2.9.6/Sparkle-2.9.6.tar.xz" CACHE STRING "URL to Sparkle release archive")
     set(MACOSX_SPARKLE_SHA256 "52bf9e88cdd972fc0c81501377a880e90d47031bd8ca5462488f843e2609e192" CACHE STRING "SHA256 checksum for Sparkle release archive")

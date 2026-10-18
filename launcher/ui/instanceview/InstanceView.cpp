@@ -34,6 +34,7 @@
  */
 
 #include "InstanceView.h"
+#include "kubik/KubikBrand.h"
 
 #include <QAccessible>
 #include <QApplication>
@@ -258,6 +259,9 @@ QString InstanceView::groupNameAt(const QPoint& point)
 
 int InstanceView::calculateItemsPerRow() const
 {
+    if (m_stretchItems) {
+        return qMax(1, qFloor((qreal)(width() - m_spacing) / (qreal)(m_itemWidth + m_spacing)));
+    }
     return qFloor((qreal)(contentWidth()) / (qreal)(itemWidth() + m_spacing));
 }
 
@@ -268,7 +272,24 @@ int InstanceView::contentWidth() const
 
 int InstanceView::itemWidth() const
 {
+    if (m_stretchItems) {
+        const int perRow = m_currentItemsPerRow > 0 ? m_currentItemsPerRow : calculateItemsPerRow();
+        return qMax(m_itemWidth, (width() - (perRow + 1) * m_spacing) / perRow);
+    }
     return m_itemWidth;
+}
+
+void InstanceView::setTileMetrics(int minItemWidth, int spacing)
+{
+    m_stretchItems = true;
+    m_itemWidth = minItemWidth;
+    m_spacing = spacing;
+    m_leftMargin = spacing;
+    m_rightMargin = spacing;
+    m_bottomMargin = spacing;
+    m_categoryMargin = spacing;
+    m_currentItemsPerRow = calculateItemsPerRow();
+    updateGeometries();
 }
 
 void InstanceView::mousePressEvent(QMouseEvent* event)
@@ -473,7 +494,7 @@ void InstanceView::paintEvent([[maybe_unused]] QPaintEvent* event)
 
         // calculate the rect for the overlay
         painter.setRenderHint(QPainter::Antialiasing, true);
-        QFont font("sans", 20);
+        QFont font(KubikBrand::displayFamily(), 20);
         font.setBold(true);
 
         QRect bounds = viewport()->geometry();
@@ -481,9 +502,10 @@ void InstanceView::paintEvent([[maybe_unused]] QPaintEvent* event)
         auto innerBounds = bounds;
         innerBounds.adjust(10, 10, -10, -10);
 
-        QColor background = QApplication::palette().color(QPalette::WindowText);
-        QColor foreground = QApplication::palette().color(QPalette::Base);
-        foreground.setAlpha(190);
+        // KubikLauncher: a raised block with light text, as on the dashboard, rather than Prism's
+        // inverted (text-coloured) box, which reads as a light-mode panel on the dark theme.
+        QColor background = QApplication::palette().color(QPalette::AlternateBase);
+        QColor foreground = QApplication::palette().color(QPalette::Text);
         painter.setFont(font);
         auto fontMetrics = painter.fontMetrics();
         auto textRect = fontMetrics.boundingRect(innerBounds, Qt::AlignHCenter | Qt::TextWordWrap, emptyString);
@@ -582,6 +604,9 @@ void InstanceView::resizeEvent([[maybe_unused]] QResizeEvent* event)
     if (newItemsPerRow != m_currentItemsPerRow) {
         m_currentCursorColumn = -1;
         m_currentItemsPerRow = newItemsPerRow;
+        updateGeometries();
+    } else if (m_stretchItems) {
+        // stretched tiles change width with the view even when the row count stays
         updateGeometries();
     } else {
         updateScrollbar();

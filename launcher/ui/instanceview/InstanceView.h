@@ -80,6 +80,15 @@ class InstanceView : public QAbstractItemView {
     int spacing() const { return m_spacing; };
     void setPaintCat(bool visible);
 
+    /**
+     * KubikLauncher: large tiles that stretch to fill each row. Tiles are at least
+     * `minItemWidth` wide and grow so a row has no ragged gap on the right; `spacing`
+     * is used between tiles, between rows and as the view's margin.
+     */
+    void setTileMetrics(int minItemWidth, int spacing);
+    /// Width of one tile at the view's current size.
+    int itemWidth() const;
+
    public slots:
     virtual void updateGeometries() override;
 
@@ -126,6 +135,7 @@ class InstanceView : public QAbstractItemView {
     int m_categoryMargin = 5;
     int m_spacing = 5;
     int m_itemWidth = 100;
+    bool m_stretchItems = false;
     int m_currentItemsPerRow = -1;
     int m_currentCursorColumn = -1;
     mutable QCache<int, QRect> m_geometryCache;
@@ -147,7 +157,6 @@ class InstanceView : public QAbstractItemView {
     int contentWidth() const;
 
    private: /* methods */
-    int itemWidth() const;
     int calculateItemsPerRow() const;
     int verticalScrollToValue(const QModelIndex& index, const QRect& rect, QListView::ScrollHint hint) const;
     QPixmap renderToPixmap(const QModelIndexList& indices, QRect* r) const;

@@ -53,6 +53,9 @@
 AccountListPage::AccountListPage(QWidget* parent) : QMainWindow(parent), ui(new Ui::AccountListPage)
 {
     ui->setupUi(this);
+    // KubikLauncher plays online only, so there is no way to add an offline account.
+    ui->toolBar->removeAction(ui->actionAddOffline);
+    ui->actionAddOffline->setEnabled(false);
     ui->listView->setEmptyString(
         tr("Welcome!\n"
            "If you're new here, you can select the \"Add Microsoft\" button to link your Microsoft account."));

@@ -289,7 +289,32 @@ void LaunchController::login()
         return;
     }
 
+    // KubikLauncher plays online only. Every road into an offline session ends here: an offline
+    // account, an explicit offline launch, and the fallback when Microsoft or Mojang cannot be
+    // reached. The menu and CLI entry points are hidden too, but this is the guard that holds.
+    if (m_actualLaunchMode == LaunchMode::Offline || (m_accountToUse && m_accountToUse->accountType() == AccountType::Offline)) {
+        QString message = tr("KubikLauncher only plays online, with a Microsoft account that owns Minecraft.");
+        if (m_wantedLaunchMode == LaunchMode::Normal && m_accountToUse && m_accountToUse->accountType() != AccountType::Offline) {
+            if (Net::isServerError(m_accountToUse->accountData()->networkError)) {
+                message =
+                    tr("The Minecraft authentication servers are currently unavailable. KubikLauncher only plays online, so "
+                       "please try again in a few minutes.");
+            } else {
+                message = tr("You are not connected to the Internet. KubikLauncher only plays online, so please connect and try again.");
+            }
+        }
+        CustomMessageBox::selectable(m_parentWidget, tr("Can't launch offline"), message, QMessageBox::Warning)->exec();
+        emitFailed(message);
+        return;
+    }
+
     if (m_actualLaunchMode == LaunchMode::Demo) {
+        // KubikLauncher: the demo needs a Microsoft account too (one that does not own the game), as
+        // in Mojang's own launcher. Prism would otherwise start it with no sign-in at all.
+        if (!m_accountToUse) {
+            emitFailed(tr("No account selected for launch"));
+            return;
+        }
         if (m_wantedLaunchMode == LaunchMode::Demo || askPlayDemo()) {
             bool ok = false;
             auto name = askOfflineName("Player", &ok);

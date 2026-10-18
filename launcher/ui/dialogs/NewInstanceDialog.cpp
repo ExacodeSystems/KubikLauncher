@@ -37,7 +37,6 @@
 #include "NewInstanceDialog.h"
 #include "Application.h"
 #include "ui/pages/modplatform/ModpackProviderBasePage.h"
-#include "ui/pages/modplatform/import_ftb/ImportFTBPage.h"
 #include "ui_NewInstanceDialog.h"
 
 #include <BaseVersion.h>
@@ -60,12 +59,7 @@
 
 #include "ui/pages/modplatform/CustomPage.h"
 #include "ui/pages/modplatform/ImportPage.h"
-#include "ui/pages/modplatform/atlauncher/AtlPage.h"
-#include "ui/pages/modplatform/flame/FlamePage.h"
-#include "ui/pages/modplatform/ftb/FtbPage.h"
-#include "ui/pages/modplatform/legacy_ftb/Page.h"
 #include "ui/pages/modplatform/modrinth/ModrinthPage.h"
-#include "ui/pages/modplatform/technic/TechnicPage.h"
 #include "ui/widgets/PageContainer.h"
 
 NewInstanceDialog::NewInstanceDialog(const QString& initialGroup,
@@ -202,24 +196,24 @@ QList<BasePage*> NewInstanceDialog::getPages()
 
     m_importPage = new ImportPage(this);
 
+    // KubikLauncher offers three plain paths: a fresh Minecraft, a modpack from Modrinth, or a file.
+    // ATLauncher, FTB, FTB Legacy, the FTB App import, Technic and CurseForge (whose API key we do not
+    // ship) are left out so the first choice a new player makes is an easy one.
     pages.append(new CustomPage(this));
-    pages.append(m_importPage);
-    pages.append(new AtlPage(this));
-    if (APPLICATION->capabilities() & Application::SupportsFlame) {
-        pages.append(new FlamePage(this));
-    }
-    pages.append(new FtbPage(this));
-    pages.append(new LegacyFTB::Page(this));
-    pages.append(new FTBImportAPP::ImportFTBPage(this));
     pages.append(new ModrinthPage(this));
-    pages.append(new TechnicPage(this));
+    pages.append(m_importPage);
 
     return pages;
 }
 
 QString NewInstanceDialog::dialogTitle()
 {
-    return tr("New Instance");
+    return tr("New instance");
+}
+
+void NewInstanceDialog::selectPage(const QString& pageId)
+{
+    m_container->selectPage(pageId);
 }
 
 NewInstanceDialog::~NewInstanceDialog()

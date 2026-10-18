@@ -8,23 +8,27 @@ if(UNIX)
     endif()
 endif()
 
-set(Launcher_CommonName "PrismLauncher")
-set(Launcher_DisplayName "Prism Launcher")
-set(Launcher_AppID "org.prismlauncher.PrismLauncher")
-set(Launcher_Domain "prismlauncher.org")
-set(Launcher_Git "https://github.com/PrismLauncher/PrismLauncher")
+# KubikLauncher is a fork of Prism Launcher and is not endorsed by or affiliated with the Prism
+# Launcher project. The upstream copyright lines stay: the GPL requires the notices to be kept.
+set(Launcher_CommonName "KubikLauncher")
+set(Launcher_DisplayName "KubikLauncher")
+set(Launcher_AppID "gg.kubik.KubikLauncher")
+set(Launcher_Domain "kubik.gg")
+set(Launcher_Git "https://github.com/ExacodeSystems/KubikLauncher")
 
 set(Launcher_Name "${Launcher_CommonName}" PARENT_SCOPE)
 set(Launcher_DisplayName "${Launcher_DisplayName}" PARENT_SCOPE)
-set(Launcher_ENVName "PRISMLAUNCHER" PARENT_SCOPE)
+set(Launcher_ENVName "KUBIKLAUNCHER" PARENT_SCOPE)
 set(Launcher_Domain "${Launcher_Domain}" PARENT_SCOPE)
 set(Launcher_Git "${Launcher_Git}" PARENT_SCOPE)
 
 set(Launcher_SVGFileName "${Launcher_AppID}.svg")
-set(Launcher_Copyright "© 2022-2026 Prism Launcher Contributors\\n© 2021-2022 PolyMC Contributors\\n© 2012-2021 MultiMC Contributors")
-set(Launcher_Copyright_Mac "© 2022-2026 Prism Launcher Contributors, © 2021-2022 PolyMC Contributors and © 2012-2021 MultiMC Contributors" PARENT_SCOPE)
+set(Launcher_Copyright "© 2026 PT Exacode Systems Technologies\\n© 2022-2026 Prism Launcher Contributors\\n© 2021-2022 PolyMC Contributors\\n© 2012-2021 MultiMC Contributors")
+set(Launcher_Copyright_Mac "© 2026 PT Exacode Systems Technologies, © 2022-2026 Prism Launcher Contributors, © 2021-2022 PolyMC Contributors and © 2012-2021 MultiMC Contributors" PARENT_SCOPE)
 set(Launcher_Copyright "${Launcher_Copyright}" PARENT_SCOPE)
-set(Launcher_UserAgent "${Launcher_CommonName}/${Launcher_VERSION_NAME}" PARENT_SCOPE)
+# Modrinth asks every client for a User-Agent that identifies it and gives a contact, and may block
+# generic ones; this is ours, not Prism's.
+set(Launcher_UserAgent "${Launcher_CommonName}/${Launcher_VERSION_NAME} (halo@kubik.gg)" PARENT_SCOPE)
 set(Launcher_ConfigFile "${Launcher_APP_BINARY_NAME}.cfg" PARENT_SCOPE)
 set(Launcher_AppID "${Launcher_AppID}" PARENT_SCOPE)
 set(Launcher_SVGFileName "${Launcher_SVGFileName}" PARENT_SCOPE)
@@ -40,7 +44,7 @@ set(Launcher_Branding_ICO "program_info/${Launcher_APP_BINARY_NAME}.ico")
 set(Launcher_Branding_ICO "${Launcher_Branding_ICO}" PARENT_SCOPE)
 set(Launcher_Branding_WindowsRC "program_info/${Launcher_APP_BINARY_NAME}.rc" PARENT_SCOPE)
 set(Launcher_Branding_LogoQRC "program_info/${Launcher_APP_BINARY_NAME}.qrc" PARENT_SCOPE)
-set(Launcher_Authors "MultiMC & Prism Launcher Contributors")
+set(Launcher_Authors "PT Exacode Systems Technologies, MultiMC & Prism Launcher Contributors")
 
 set(Launcher_Portable_File "program_info/portable.txt" PARENT_SCOPE)
 

@@ -35,6 +35,7 @@
  */
 
 #include "VisualGroup.h"
+#include "kubik/KubikBrand.h"
 
 #include <QApplication>
 #include <QDebug>
@@ -69,7 +70,7 @@ void VisualGroup::update()
             if (currentRow >= rows.size()) {
                 currentRow = rows.size() - 1;
             }
-            offsetFromTop += maxRowHeight + 5;
+            offsetFromTop += maxRowHeight + view->spacing();
             positionInRow = 0;
             maxRowHeight = 0;
         }
@@ -141,10 +142,16 @@ VisualGroup::HitResults VisualGroup::hitScan(const QPoint& pos) const
 
 void VisualGroup::drawHeader(QPainter* painter, const QStyleOptionViewItem& option) const
 {
+    // KubikLauncher: when every instance is ungrouped, the one "Ungrouped" heading says nothing,
+    // so the grid starts under the page header with no label at all.
+    if (text.isEmpty() && view->m_groups.size() <= 1) {
+        return;
+    }
     QRect optRect = option.rect;
     optRect.setTop(optRect.top() + 7);
-    QFont font(QApplication::font());
-    font.setBold(true);
+    QFont font(KubikBrand::displayFamily());
+    font.setPixelSize(16);
+    font.setWeight(QFont::DemiBold);
     const QFontMetrics fontMetrics = QFontMetrics(font);
     painter->setFont(font);
 
@@ -192,22 +199,7 @@ void VisualGroup::drawHeader(QPainter* painter, const QStyleOptionViewItem& opti
     }
     // END: text
 
-    // BEGIN: horizontal line
-    {
-        penColor.setAlphaF(0.05f);
-        pen.setColor(penColor);
-        painter->setPen(pen);
-        // startPoint is left + arrow + text + space
-        const int startPoint =
-            optRect.left() + fontMetrics.height() + fontMetrics.size(Qt::AlignLeft | Qt::AlignVCenter, textToDraw).width() + 20;
-        painter->setRenderHint(QPainter::Antialiasing, false);
-        QPolygon polygon;
-        // for some reason the height (yPos) doesn't look centered, so we are adding 1 to the center height
-        const int lineHeight = centerHeight + 1;
-        polygon << QPoint(startPoint, lineHeight) << QPoint(optRect.right() - 3, lineHeight);
-        painter->drawPolyline(polygon);
-    }
-    // END: horizontal line
+    // KubikLauncher: no rule after the heading; the heading and the space around it separate the groups.
 }
 
 int VisualGroup::totalHeight() const

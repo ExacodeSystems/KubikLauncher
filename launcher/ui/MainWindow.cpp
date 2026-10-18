@@ -67,6 +67,7 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QShortcut>
+#include <QStackedWidget>
 #include <QStatusBar>
 #include <QToolBar>
 #include <QToolButton>
@@ -92,6 +93,7 @@
 #include <updater/ExternalUpdater.h>
 #include "InstanceWindow.h"
 
+#include "kubik/KubikWindowChrome.h"
 #include "ui/GuiUtil.h"
 #include "ui/ViewLogWindow.h"
 #include "ui/dialogs/AboutDialog.h"
@@ -109,6 +111,11 @@
 #include "ui/instanceview/InstanceDelegate.h"
 #include "ui/instanceview/InstanceProxyModel.h"
 #include "ui/instanceview/InstanceView.h"
+#include "ui/kubik/KubikHomePage.h"
+#include "ui/kubik/KubikInstanceDelegate.h"
+#include "ui/kubik/KubikInstancePage.h"
+#include "ui/kubik/KubikServersPage.h"
+#include "ui/kubik/KubikSidebar.h"
 #include "ui/themes/ITheme.h"
 #include "ui/themes/ThemeManager.h"
 
@@ -149,6 +156,8 @@ QString profileInUseFilter(const QString& profile, bool used)
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    // KubikLauncher: a native frame, dark and quiet (content under the title bar on macOS).
+    KubikWindowChrome::apply(this);
 
     setWindowIcon(APPLICATION->logo());
     setWindowTitle(APPLICATION->applicationDisplayName());
@@ -245,14 +254,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         connect(ui->actionViewLog, &QAction::triggered, this, [] { APPLICATION->showLogWindow(); });
     }
 
-    // add the toolbar toggles to the view menu
-    ui->viewMenu->addAction(ui->instanceToolBar->toggleViewAction());
-    ui->viewMenu->addAction(ui->newsToolBar->toggleViewAction());
+    // KubikLauncher has no toolbars (see the end of this constructor), so the View menu offers no
+    // toggles for them, and there is no toolbar to unify with the macOS title bar.
 
     updateThemeMenu();
     updateMainToolBar();
-    // OSX magic.
-    setUnifiedTitleAndToolBarOnMac(true);
 
     // Global shortcuts
     {
@@ -296,27 +302,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
         view->setSelectionMode(QAbstractItemView::SingleSelection);
         // FIXME: leaks ListViewDelegate
-        auto delegate = new ListViewDelegate(this);
+        // KubikLauncher: large tiles. Still a ListViewDelegate, so renaming in place works as before.
+        auto delegate = new KubikInstanceDelegate(this);
         view->setItemDelegate(delegate);
         view->setFrameShape(QFrame::NoFrame);
         // do not show ugly blue border on the mac
         view->setAttribute(Qt::WA_MacShowFocusRect, false);
-        connect(delegate, &ListViewDelegate::textChanged, this, [this](QString before, QString after) {
-            if (auto newRoot = askToUpdateInstanceDirName(m_selectedInstance, before, after, this); !newRoot.isEmpty()) {
-                auto oldID = m_selectedInstance->id();
-                auto newID = QFileInfo(newRoot).fileName();
-                QString origGroup(APPLICATION->instances()->getInstanceGroup(oldID));
-                bool syncGroup = origGroup != GroupId() && oldID != newID;
-                if (syncGroup)
-                    APPLICATION->instances()->setInstanceGroup(oldID, GroupId());
-
-                refreshInstances();
-                setSelectedInstanceById(newID);
-
-                if (syncGroup)
-                    APPLICATION->instances()->setInstanceGroup(newID, origGroup);
-            }
-        });
+        connect(delegate, &ListViewDelegate::textChanged, this, &MainWindow::onInstanceRenamed);
 
         view->installEventFilter(this);
         view->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -332,7 +324,39 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         view->setSourceOfGroupCollapseStatus(
             [](const QString& groupName) -> bool { return APPLICATION->instances()->isGroupCollapsed(groupName); });
         connect(view, &InstanceView::groupStateChanged, APPLICATION->instances(), &InstanceList::on_GroupStateChanged);
-        ui->horizontalLayout->addWidget(view);
+
+        // KubikLauncher's shell: the rail, and a stack of pages. Prism's instance grid lives on Home
+        // (inside KubikHomePage) with all of its wiring above left as it was.
+        m_sidebar = new KubikSidebar(ui->centralWidget);
+        m_pages = new QStackedWidget(ui->centralWidget);
+        m_home = new KubikHomePage(view, proxymodel, m_pages);
+        m_instancePage = new KubikInstancePage(m_pages);
+        m_pages->addWidget(m_home);                         // KubikSidebar::Home
+        m_pages->addWidget(new KubikServersPage(m_pages));  // KubikSidebar::Servers
+        m_pages->addWidget(m_instancePage);                 // reached from a tile, not from the rail
+        connect(m_sidebar, &KubikSidebar::pageRequested, m_pages, &QStackedWidget::setCurrentIndex);
+        connect(m_sidebar, &KubikSidebar::settingsRequested, this, [this] { APPLICATION->ShowGlobalSettings(this); });
+
+        connect(m_home, &KubikHomePage::newInstanceRequested, this, [this](const QString& page) { addInstance({}, {}, page); });
+        connect(m_home, &KubikHomePage::instanceOpened, this, &MainWindow::showInstancePage);
+        connect(m_home, &KubikHomePage::playRequested, this, &MainWindow::launchInstanceById);
+
+        connect(m_instancePage, &KubikInstancePage::backRequested, this, &MainWindow::showHome);
+        connect(m_instancePage, &KubikInstancePage::playRequested, this, &MainWindow::launchInstanceById);
+        connect(m_instancePage, &KubikInstancePage::stopRequested, this, [](const QString& id) {
+            if (auto* instance = APPLICATION->instances()->getInstanceById(id)) {
+                APPLICATION->kill(instance);
+            }
+        });
+        connect(m_instancePage, &KubikInstancePage::manageRequested, this, [](const QString& id, const QString& page) {
+            if (auto* instance = APPLICATION->instances()->getInstanceById(id)) {
+                APPLICATION->showInstanceWindow(instance, page);
+            }
+        });
+        connect(m_instancePage, &KubikInstancePage::actionRequested, this, &MainWindow::performInstanceAction);
+
+        ui->horizontalLayout->addWidget(m_sidebar);
+        ui->horizontalLayout->addWidget(m_pages);
     }
     // The cat background
     {
@@ -405,7 +429,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     // auto accounts = APPLICATION->accounts();
 
     // load the news
-    {
+    if (BuildConfig.NEWS_RSS_URL.isEmpty()) {
+        // No feed configured: take the toolbar out of the layout, so a saved window state cannot
+        // bring back a bar that only ever says it failed to load.
+        removeToolBar(ui->newsToolBar);
+    } else {
         m_newsChecker->reloadNews();
         updateNewsLabel();
     }
@@ -430,6 +458,37 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // removing this looks stupid
     view->setFocus();
+
+    // KubikLauncher: no toolbars and no status bar. Every action they held is still reachable (the
+    // rail, Home, the instance page, the right-click menu and, on macOS, the menu bar). The bars
+    // are taken out of the layout rather than hidden, so neither a saved window state nor
+    // updateMainToolBar can put them back.
+    for (QToolBar* bar : std::initializer_list<QToolBar*>{ ui->mainToolBar, ui->instanceToolBar, ui->newsToolBar }) {
+        removeToolBar(bar);
+    }
+    statusBar()->hide();
+    ui->actionToggleStatusBar->setVisible(false);
+    ui->actionLockToolbars->setVisible(false);
+    // A shortcut only fires for an action on a visible widget, and the menu bar is hidden off macOS.
+    addActions({ ui->actionAddInstance, ui->actionSettings, ui->actionUndoTrashInstance, ui->actionCloseWindow });
+
+    // The rail's "Help & more": what Prism kept on its toolbar and in menus that are hidden off macOS.
+    {
+        auto* more = new QMenu(this);
+        more->addMenu(ui->foldersMenu);
+        more->addSeparator();
+        more->addAction(ui->actionUndoTrashInstance);
+        more->addAction(ui->actionViewLog);
+        more->addAction(ui->actionOpenWiki);
+        more->addAction(ui->actionReportBug);
+        more->addAction(ui->actionCheckUpdate);
+        more->addSeparator();
+        more->addAction(ui->actionAbout);
+        m_sidebar->setMoreMenu(more);
+    }
+    m_sidebar->setAccountMenu(ui->actionAccountsButton->menu());
+    defaultAccountChanged();
+    KubikWindowChrome::ignoreSafeArea(this);
 
     retranslateUi();
 }
@@ -490,7 +549,8 @@ QMenu* MainWindow::createPopupMenu()
 }
 void MainWindow::setStatusBarVisibility(bool state)
 {
-    statusBar()->setVisible(state);
+    // KubikLauncher has no status bar: Home and the instance page say what it used to.
+    statusBar()->setVisible(false);
     APPLICATION->settings()->set("StatusBarVisible", state);
 }
 void MainWindow::lockToolbars(bool state)
@@ -590,7 +650,7 @@ void MainWindow::showInstanceContextMenu(const QPoint& pos)
 void MainWindow::updateMainToolBar()
 {
     ui->menuBar->setVisible(APPLICATION->settings()->get("MenuBarInsteadOfToolBar").toBool());
-    ui->mainToolBar->setVisible(ui->menuBar->isNativeMenuBar() || !APPLICATION->settings()->get("MenuBarInsteadOfToolBar").toBool());
+    // KubikLauncher: the main toolbar is gone (see the constructor), so it is never shown here.
 }
 
 void MainWindow::updateLaunchButton()
@@ -763,12 +823,18 @@ void MainWindow::defaultAccountChanged()
         } else {
             ui->actionAccountsButton->setIcon(face);
         }
+        if (m_sidebar) {
+            m_sidebar->setAccount(face.isNull() ? QIcon() : QIcon(face), account->displayName());
+        }
         return;
     }
 
     // Set the icon to the "no account" icon.
     ui->actionAccountsButton->setIcon(QIcon::fromTheme("noaccount"));
     ui->actionAccountsButton->setText(tr("Accounts"));
+    if (m_sidebar) {
+        m_sidebar->setAccount(QIcon(), QString());
+    }
 }
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
@@ -906,7 +972,7 @@ void MainWindow::on_actionCopyInstance_triggered()
     runModalTask(task.get());
 }
 
-void MainWindow::addInstance(const QString& url, const QMap<QString, QString>& extra_info)
+void MainWindow::addInstance(const QString& url, const QMap<QString, QString>& extra_info, const QString& page)
 {
     QString groupName;
     do {
@@ -927,6 +993,9 @@ void MainWindow::addInstance(const QString& url, const QMap<QString, QString>& e
     }
 
     NewInstanceDialog newInstDlg(groupName, url, extra_info, this);
+    if (!page.isEmpty()) {
+        newInstDlg.selectPage(page);
+    }
     if (!newInstDlg.exec())
         return;
 
@@ -969,7 +1038,7 @@ void MainWindow::processURLs(QList<QUrl> urls)
                 } else {
                     CustomMessageBox::selectable(
                         this, tr("Error"),
-                        tr("Unsupported Modrinth link.\n\nPrism Launcher currently only supports modpack links such as "
+                        tr("Unsupported Modrinth link.\n\nKubikLauncher currently only supports modpack links such as "
                            "modrinth://modpack/fabulously-optimized."),
                         QMessageBox::Critical)
                         ->show();
@@ -1838,4 +1907,110 @@ void MainWindow::updateInstanceToolBarOrientation(Qt::Orientation orientation)
     }
     // HACK: sync size (no, I don't know why this works)
     ui->instanceToolBar->resize(0, 0);
+}
+
+// ── KubikLauncher's shell ────────────────────────────────────────────────────
+
+void MainWindow::showInstancePage(const QString& instanceId)
+{
+    // Select it too: the instance actions below act on the selected instance.
+    setSelectedInstanceById(instanceId);
+    m_instancePage->setInstance(instanceId);
+    m_pages->setCurrentWidget(m_instancePage);
+}
+
+void MainWindow::showHome()
+{
+    m_sidebar->setCurrentPage(KubikSidebar::Home);
+}
+
+void MainWindow::launchInstanceById(const QString& instanceId)
+{
+    if (auto* instance = APPLICATION->instances()->getInstanceById(instanceId)) {
+        setSelectedInstanceById(instanceId);
+        APPLICATION->launch(instance);
+    }
+}
+
+void MainWindow::performInstanceAction(const QString& instanceId, KubikInstancePage::Action action)
+{
+    // Prism's instance actions all work on the selected instance, so select it first and reuse them.
+    setSelectedInstanceById(instanceId);
+    if (!m_selectedInstance || m_selectedInstance->id() != instanceId) {
+        return;
+    }
+    using Action = KubikInstancePage::Action;
+    switch (action) {
+        case Action::OpenFolder:
+            on_actionViewSelectedInstFolder_triggered();
+            break;
+        case Action::ExportZip:
+            on_actionExportInstanceZip_triggered();
+            break;
+        case Action::ExportModrinth:
+            on_actionExportInstanceMrPack_triggered();
+            break;
+        case Action::Rename:
+            renameInstanceWithDialog();
+            break;
+        case Action::ChangeIcon:
+            on_actionChangeInstIcon_triggered();
+            break;
+        case Action::ChangeGroup:
+            on_actionChangeInstGroup_triggered();
+            break;
+        case Action::Copy:
+            on_actionCopyInstance_triggered();
+            break;
+        case Action::CreateShortcut:
+            on_actionCreateInstanceShortcut_triggered();
+            break;
+        case Action::Delete:
+            on_actionDeleteInstance_triggered();
+            break;
+    }
+}
+
+void MainWindow::renameInstanceWithDialog()
+{
+    // The instance page has no tile to edit in place, so it asks in a dialog and then takes the same
+    // path as renaming on the grid (the model's setData, then onInstanceRenamed).
+    const QModelIndex index = view->currentIndex();
+    if (!m_selectedInstance || !index.isValid()) {
+        return;
+    }
+    const QString before = m_selectedInstance->name();
+    bool ok = false;
+    QString after = QInputDialog::getText(this, tr("Rename instance"), tr("New name:"), QLineEdit::Normal, before, &ok);
+    after = after.simplified();
+    // The same limit as renaming on the grid.
+    after.truncate(128);
+    if (!ok || after.isEmpty() || after == before) {
+        return;
+    }
+    proxymodel->setData(index, after);
+    onInstanceRenamed(before, after);
+}
+
+void MainWindow::onInstanceRenamed(const QString& before, const QString& after)
+{
+    if (auto newRoot = askToUpdateInstanceDirName(m_selectedInstance, before, after, this); !newRoot.isEmpty()) {
+        auto oldID = m_selectedInstance->id();
+        auto newID = QFileInfo(newRoot).fileName();
+        QString origGroup(APPLICATION->instances()->getInstanceGroup(oldID));
+        bool syncGroup = origGroup != GroupId() && oldID != newID;
+        if (syncGroup)
+            APPLICATION->instances()->setInstanceGroup(oldID, GroupId());
+
+        refreshInstances();
+        setSelectedInstanceById(newID);
+
+        if (syncGroup)
+            APPLICATION->instances()->setInstanceGroup(newID, origGroup);
+
+        // The instance page follows the instance to its new folder name.
+        if (m_pages->currentWidget() == m_instancePage) {
+            m_instancePage->setInstance(newID);
+        }
+    }
 }

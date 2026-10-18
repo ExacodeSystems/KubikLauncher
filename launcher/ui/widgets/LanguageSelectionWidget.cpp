@@ -48,6 +48,11 @@ LanguageSelectionWidget::LanguageSelectionWidget(QWidget* parent)
     m_languageView->setCurrentIndex(index);
     m_languageView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
     m_languageView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    // KubikLauncher offers two complete languages, so there is no completeness to compare and no
+    // translation platform to point at.
+    m_languageView->setColumnHidden(1, true);
+    m_languageView->header()->hide();
+    m_helpUsLabel->setVisible(!BuildConfig.TRANSLATIONS_URL.isEmpty());
     connect(m_languageView->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &LanguageSelectionWidget::languageRowChanged);
     m_verticalLayout->setContentsMargins(0, 0, 0, 0);
 

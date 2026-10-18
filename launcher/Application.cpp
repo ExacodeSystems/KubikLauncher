@@ -42,6 +42,8 @@
 
 #include "Application.h"
 #include "BuildConfig.h"
+#include "kubik/KubikBrand.h"
+#include "kubik/KubikSnapshot.h"
 
 #include "DataMigrationTask.h"
 #include "java/JavaInstallList.h"
@@ -331,7 +333,6 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
           { { "s", "server" }, "Join the specified server on launch (only valid in combination with --launch)", "address" },
           { { "w", "world" }, "Join the specified world on launch (only valid in combination with --launch)", "world" },
           { { "a", "profile" }, "Use the account specified by its profile name (only valid in combination with --launch)", "profile" },
-          { { "o", "offline" }, "Launch offline, with given player name (only valid in combination with --launch)", "offline" },
           { "alive", "Write a small '" + g_liveCheckFile + "' file after the launcher starts" },
           { "show-window", "Show the main launcher window (useful in combination with --launch)" },
           { { "I", "import" }, "Import instance or resource from specified local path or URL", "url" },
@@ -348,10 +349,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
     m_serverToJoin = parser.value("server");
     m_worldToJoin = parser.value("world");
     m_profileToUse = parser.value("profile");
-    if (parser.isSet("offline")) {
-        m_launchOffline = true;
-        m_offlineName = parser.value("offline");
-    }
+    // No --offline: KubikLauncher plays online only (LaunchController::login refuses offline sessions).
     m_liveCheck = parser.isSet("alive");
 
     m_instanceIdToShowWindowOf = parser.value("show");
@@ -369,7 +367,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
     // error if --launch is missing with --server or --profile
     if ((!m_serverToJoin.isEmpty() || !m_worldToJoin.isEmpty() || !m_profileToUse.isEmpty() || m_launchOffline) &&
         m_instanceIdToLaunch.isEmpty()) {
-        std::cerr << "--server, --profile and --offline can only be used in combination with --launch!" << std::endl;
+        std::cerr << "--server, --world and --profile can only be used in combination with --launch!" << std::endl;
         m_status = Application::Failed;
         return;
     }
@@ -655,9 +653,10 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         // Provide a fallback for migration from PolyMC
         m_settings.reset(new INISettingsObject({ BuildConfig.LAUNCHER_CONFIGFILE, "polymc.cfg", "multimc.cfg" }, this));
 
-        // Theming
-        m_settings->registerSetting("IconTheme", QString());
-        m_settings->registerSetting("ApplicationTheme", QString());
+        // Theming. KubikLauncher starts in its own look (ui/themes/KubikTheme) with the flat white
+        // icons, which sit on its near-black blocks the way the dashboard's do.
+        m_settings->registerSetting("IconTheme", QString("flat_white"));
+        m_settings->registerSetting("ApplicationTheme", QString("kubik"));
         m_settings->registerSetting("BackgroundCat", QString("kitteh"));
 
         // Remembered state
@@ -670,15 +669,13 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         m_settings->registerSetting("NumberOfManualRetries", 1);
         m_settings->registerSetting("RequestTimeout", 60);
 
-        QString defaultMonospace;
+        // The console speaks the website's mono face. Registered here, before the default below is
+        // resolved, so QFontInfo finds the bundled font rather than substituting a system one.
+        KubikBrand::registerFonts();
+        QString defaultMonospace = KubikBrand::monoFamily();
         int defaultSize = 11;
 #ifdef Q_OS_WIN32
-        defaultMonospace = "Courier";
         defaultSize = 10;
-#elif defined(Q_OS_MAC)
-        defaultMonospace = "Menlo";
-#else
-        defaultMonospace = "Monospace";
 #endif
 
         // resolve the font so the default actually matches
@@ -813,7 +810,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         m_settings->registerSetting({ "PostExitCommand", "PostExitCmd" }, "");
 
         // The cat
-        m_settings->registerSetting("EnableCat", true);
+        // KubikLauncher: no cat behind the instance grid (the brand draws nothing decorative).
+        m_settings->registerSetting("EnableCat", false);
         m_settings->registerSetting("TheCat", false);
         m_settings->registerSetting("CatOpacity", 100);
         m_settings->registerSetting("CatFit", "fit");
@@ -823,7 +821,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         m_settings->registerSetting("ToolbarsLocked", false);
 
         // Instance
-        m_settings->registerSetting("InstSortMode", "Name");
+        // KubikLauncher: Home opens on what you played last, the way a game launcher does.
+        m_settings->registerSetting("InstSortMode", "LastLaunch");
         m_settings->registerSetting("InstRenamingMode", "AskEverytime");
         m_settings->registerSetting("EditInstanceOnDoubleClick", false);
         m_settings->registerSetting("SelectedInstance", QString());
@@ -1104,7 +1103,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
                               "\n"
                               "This likely means that a update attempt failed. Please ensure your installation is in working order before "
                               "proceeding.\n"
-                              "Check the Prism Launcher updater log at: \n"
+                              "Check the KubikLauncher updater log at: \n"
                               "%7\n"
                               "for details on the last update attempt.\n"
                               "\n"
@@ -1144,7 +1143,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
                               "\n"
                               "Please ensure your installation is in working order before "
                               "proceeding.\n"
-                              "Check the Prism Launcher updater log at: \n"
+                              "Check the KubikLauncher updater log at: \n"
                               "%1\n"
                               "for details on the last update attempt.")
                                .arg(updateLogPath);
@@ -1179,7 +1178,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
             auto infoMsg = tr("Update succeeded\n"
                               "\n"
                               "You are now running %1 .\n"
-                              "Check the Prism Launcher updater log at: \n"
+                              "Check the KubikLauncher updater log at: \n"
                               "%2\n"
                               "for details.")
                                .arg(BuildConfig.printableVersionString())
@@ -1239,6 +1238,9 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         installEventFilter(new ToolTipFilter);
     }
 
+    // Debug builds: KUBIKLAUNCHER_SNAPSHOT_DIR saves each first-run screen as a PNG and quits.
+    KubikSnapshot::startIfRequested();
+
     // the setup wizard applies the selected theme itself before it is shown
     if (!createSetupWizard()) {
         m_themeManager->applyCurrentlySelectedTheme(true);
@@ -1278,17 +1280,10 @@ bool Application::createSetupWizard()
     if (wizardRequired) {
         // set default theme after going into theme wizard
         if (!validIcons) {
-            settings()->set("IconTheme", QString("pe_colored"));
+            settings()->set("IconTheme", QString("flat_white"));
         }
         if (!validWidgets) {
-#if defined(Q_OS_WIN32) || defined(Q_OS_MACOS)
-            const QString style =
-                QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark ? QStringLiteral("dark") : QStringLiteral("bright");
-#else
-            const QString style = QStringLiteral("system");
-#endif
-
-            settings()->set("ApplicationTheme", style);
+            settings()->set("ApplicationTheme", QString("kubik"));
         }
 
         m_themeManager->applyCurrentlySelectedTheme(true);

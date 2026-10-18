@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>@Launcher_AppID@</id>
+  <name>KubikLauncher</name>
+  <summary>Minecraft launcher that installs the mods your kubik.gg server needs and joins it</summary>
+  <developer id="gg.kubik">
+    <name>PT Exacode Systems Technologies</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <description>
+    <p>KubikLauncher is a Minecraft: Java Edition launcher from kubik.gg. Sign in with Kubik and it shows your servers; pick one and it sets up the right Minecraft version, mod loader and client-side mods, keeps them in step with the server, and joins it.</p>
+    <p>It is a fork of Prism Launcher, and is not endorsed by or affiliated with the Prism Launcher project.</p>
+    <p>Features:</p>
+    <ul>
+      <li>Sign in with your Microsoft account; online play only</li>
+      <li>Install game modifications, such as Fabric, Forge, NeoForge and Quilt</li>
+      <li>Install and update mods and modpacks from Modrinth</li>
+      <li>Manage worlds, resource packs and shader packs</li>
+      <li>Keep each instance isolated from the others</li>
+    </ul>
+  </description>
+  <releases>
+    <release version="@Launcher_VERSION_NAME@" date="@Launcher_BUILD_TIMESTAMP@"></release>
+  </releases>
+  <url type="homepage">https://kubik.gg/</url>
+  <url type="bugtracker">https://github.com/ExacodeSystems/KubikLauncher/issues</url>
+  <url type="help">https://kubik.gg/guides</url>
+  <url type="vcs-browser">https://github.com/ExacodeSystems/KubikLauncher</url>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-fantasy">moderate</content_attribute>
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+  <launchable type="desktop-id">@Launcher_AppID@.desktop</launchable>
+</component>

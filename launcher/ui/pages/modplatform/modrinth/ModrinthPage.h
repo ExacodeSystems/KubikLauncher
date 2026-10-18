@@ -61,7 +61,7 @@ class ModrinthPage : public QWidget, public ModpackProviderBasePage {
     explicit ModrinthPage(NewInstanceDialog* dialog, QWidget* parent = nullptr);
     ~ModrinthPage() override;
 
-    QString displayName() const override { return tr("Modrinth"); }
+    QString displayName() const override { return tr("Modpacks"); }
     QIcon icon() const override { return QIcon::fromTheme("modrinth"); }
     QString id() const override { return "modrinth"; }
     QString helpPage() const override { return "Modrinth-platform"; }

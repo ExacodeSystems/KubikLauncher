@@ -45,6 +45,7 @@
 #include <QTimer>
 
 #include "minecraft/auth/MinecraftAccount.h"
+#include "ui/kubik/KubikInstancePage.h"
 
 class LaunchController;
 class NewsChecker;
@@ -57,6 +58,9 @@ class BaseProfilerFactory;
 class InstanceView;
 class KonamiCode;
 class InstanceTask;
+class KubikSidebar;
+class KubikHomePage;
+class QStackedWidget;
 
 namespace Ui {
 class MainWindow;
@@ -221,7 +225,15 @@ class MainWindow : public QMainWindow {
 
     void updateInstanceToolBarOrientation(Qt::Orientation orientation);
 
-    void addInstance(const QString& url = QString(), const QMap<QString, QString>& extra_info = {});
+    void addInstance(const QString& url = QString(), const QMap<QString, QString>& extra_info = {}, const QString& page = QString());
+
+    // KubikLauncher's shell (ui/kubik/): the rail, Home, the instance page.
+    void showInstancePage(const QString& instanceId);
+    void showHome();
+    void launchInstanceById(const QString& instanceId);
+    void performInstanceAction(const QString& instanceId, KubikInstancePage::Action action);
+    void renameInstanceWithDialog();
+    void onInstanceRenamed(const QString& before, const QString& after);
     void setCatBackground(bool enabled);
     void updateCatState();
     void updateInstanceToolIcon(QString new_icon);
@@ -253,4 +265,9 @@ class MainWindow : public QMainWindow {
 
     // managed by the application object
     Task* m_versionLoadTask = nullptr;
+
+    KubikSidebar* m_sidebar = nullptr;
+    QStackedWidget* m_pages = nullptr;
+    KubikHomePage* m_home = nullptr;
+    KubikInstancePage* m_instancePage = nullptr;
 };
