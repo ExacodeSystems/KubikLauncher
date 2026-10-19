@@ -413,6 +413,22 @@ untuk detail.</translation>
         <source>Play</source>
         <translation>Main</translation>
     </message>
+    <message>
+        <source>Overview</source>
+        <translation>Ringkasan</translation>
+    </message>
+    <message>
+        <source>Advanced</source>
+        <translation>Lanjutan</translation>
+    </message>
+    <message>
+        <source>Export as a backup (.zip)</source>
+        <translation>Ekspor sebagai cadangan (.zip)</translation>
+    </message>
+    <message>
+        <source>Export as a Modrinth modpack (.mrpack)</source>
+        <translation>Ekspor sebagai modpack Modrinth (.mrpack)</translation>
+    </message>
 </context>
 <context>
     <name>KubikServersPage</name>
@@ -795,6 +811,26 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <source>Minecraft could not be started from %1.</source>
         <translation>Minecraft gagal dijalanin dari %1.</translation>
     </message>
+    <message>
+        <source>Warning: %1</source>
+        <translation>Peringatan: %1</translation>
+    </message>
+    <message>
+        <source>Failed: %1</source>
+        <translation>Gagal: %1</translation>
+    </message>
+    <message>
+        <source>Failed: %1 (%2)</source>
+        <translation>Gagal: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Stopped before starting Minecraft: no Minecraft account can play yet.</source>
+        <translation>Berhenti sebelum Minecraft dibuka: belum ada akun Minecraft yang bisa main.</translation>
+    </message>
+    <message>
+        <source>Minecraft is starting and joins %1.</source>
+        <translation>Minecraft lagi dibuka dan bakal join ke %1.</translation>
+    </message>
 </context>
 <context>
     <name>KubikServerDelegate</name>
@@ -999,6 +1035,18 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <source>Got it</source>
         <translation>Oke, paham</translation>
     </message>
+    <message>
+        <source>Hide details</source>
+        <translation>Sembunyiin detail</translation>
+    </message>
+    <message>
+        <source>Show details</source>
+        <translation>Lihat detail</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Salin</translation>
+    </message>
 </context>
 <context>
     <name>KubikSignInPage</name>
@@ -1086,6 +1134,14 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
     <message>
         <source>KubikLauncher could not record the mods it installed in %1.</source>
         <translation>KubikLauncher nggak bisa nyatet mods yang dipasang di %1.</translation>
+    </message>
+    <message>
+        <source>Removed mods another server needed: %1</source>
+        <translation>Mod buat server lain dicabut: %1</translation>
+    </message>
+    <message>
+        <source>Put in place for %1: %2</source>
+        <translation>Dipasang buat %1: %2</translation>
     </message>
 </context>
 <context>
@@ -1487,6 +1543,247 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
     <message>
         <source>Set up %1</source>
         <translation>Siapin %1</translation>
+    </message>
+</context>
+<context>
+    <name>KubikInstanceAdvanced</name>
+    <message>
+        <source>Find the java executable</source>
+        <translation>Cari file java</translation>
+    </message>
+    <message>
+        <source>Not read yet</source>
+        <translation>Belum kebaca</translation>
+    </message>
+    <message>
+        <source>None (vanilla)</source>
+        <translation>Nggak ada (vanilla)</translation>
+    </message>
+    <message>
+        <source>Uses the memory set in Settings › Java (%1).</source>
+        <translation>Pakai memori dari Pengaturan › Java (%1).</translation>
+    </message>
+    <message>
+        <source>About this instance</source>
+        <translation>Tentang instance ini</translation>
+    </message>
+    <message>
+        <source>Minecraft</source>
+        <translation>Minecraft</translation>
+    </message>
+    <message>
+        <source>Mod loader</source>
+        <translation>Mod loader</translation>
+    </message>
+    <message>
+        <source>Played</source>
+        <translation>Dimainkan</translation>
+    </message>
+    <message>
+        <source>Folder</source>
+        <translation>Folder</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Buka</translation>
+    </message>
+    <message>
+        <source>Memory</source>
+        <translation>Memori</translation>
+    </message>
+    <message>
+        <source>Give this instance its own memory</source>
+        <translation>Kasih instance ini memori sendiri</translation>
+    </message>
+    <message>
+        <source>Java</source>
+        <translation>Java</translation>
+    </message>
+    <message>
+        <source>Use a specific Java for this instance</source>
+        <translation>Pakai Java tertentu buat instance ini</translation>
+    </message>
+    <message>
+        <source>Path to the java executable</source>
+        <translation>Lokasi file java</translation>
+    </message>
+    <message>
+        <source>Browse</source>
+        <translation>Pilih file</translation>
+    </message>
+    <message>
+        <source>Leave this off unless a mod needs a particular Java: KubikLauncher otherwise picks the right one.</source>
+        <translation>Biarin mati kecuali ada mod yang butuh Java tertentu: kalau nggak, KubikLauncher milih yang pas sendiri.</translation>
+    </message>
+    <message>
+        <source>Instance</source>
+        <translation>Instance</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>Ganti nama</translation>
+    </message>
+    <message>
+        <source>Change icon</source>
+        <translation>Ganti ikon</translation>
+    </message>
+    <message>
+        <source>Make a copy</source>
+        <translation>Bikin salinan</translation>
+    </message>
+    <message>
+        <source>Delete instance</source>
+        <translation>Hapus instance</translation>
+    </message>
+    <message>
+        <source>More settings…</source>
+        <translation>Pengaturan lain…</translation>
+    </message>
+</context>
+<context>
+    <name>KubikInstanceLogs</name>
+    <message>
+        <source>This session</source>
+        <translation>Sesi ini</translation>
+    </message>
+    <message>
+        <source>Last game</source>
+        <translation>Game terakhir</translation>
+    </message>
+    <message>
+        <source>Crash report · %1</source>
+        <translation>Laporan crash · %1</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Salin</translation>
+    </message>
+    <message>
+        <source>Open logs folder</source>
+        <translation>Buka folder log</translation>
+    </message>
+    <message>
+        <source>No logs yet. They appear here after you play.</source>
+        <translation>Belum ada log. Log muncul di sini setelah kamu main.</translation>
+    </message>
+</context>
+<context>
+    <name>KubikInstanceMods</name>
+    <message numerus="yes">
+        <source>%n mod(s)</source>
+        <translation>
+            <numerusform>%n mod</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Add mod file…</source>
+        <translation>Tambah file mod…</translation>
+    </message>
+    <message>
+        <source>Open mods folder</source>
+        <translation>Buka folder mods</translation>
+    </message>
+    <message>
+        <source>Server mods switch with the server you join. The modpack&apos;s mods and the ones you add stay.</source>
+        <translation>Mod server ikut ganti sesuai server yang kamu join. Mod dari modpack dan yang kamu tambahin tetap ada.</translation>
+    </message>
+    <message>
+        <source>Server mods switch with the server you join. The ones you add stay, whichever server you play.</source>
+        <translation>Mod server ikut ganti sesuai server yang kamu join. Mod yang kamu tambahin tetap ada, di server mana pun kamu main.</translation>
+    </message>
+    <message>
+        <source>No mods yet. Mods a server needs appear here after you play it, and you can add your own.</source>
+        <translation>Belum ada mod. Mod yang dibutuhin server muncul di sini setelah kamu main, dan kamu bisa nambahin mod sendiri.</translation>
+    </message>
+    <message>
+        <source>Add mod files</source>
+        <translation>Tambah file mod</translation>
+    </message>
+    <message>
+        <source>Mods (*.jar *.zip)</source>
+        <translation>Mod (*.jar *.zip)</translation>
+    </message>
+    <message>
+        <source>Remove %1?</source>
+        <translation>Hapus %1?</translation>
+    </message>
+    <message>
+        <source>The mod&apos;s file is deleted from this instance. You can add it again any time.</source>
+        <translation>File mod-nya dihapus dari instance ini. Bisa kamu tambahin lagi kapan aja.</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Hapus</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Batal</translation>
+    </message>
+</context>
+<context>
+    <name>KubikInstanceOverview</name>
+    <message>
+        <source>Used by</source>
+        <translation>Dipakai oleh</translation>
+    </message>
+    <message>
+        <source>Folders</source>
+        <translation>Folder</translation>
+    </message>
+    <message>
+        <source>Worlds</source>
+        <translation>World</translation>
+    </message>
+    <message>
+        <source>Resource packs</source>
+        <translation>Resource pack</translation>
+    </message>
+    <message>
+        <source>Shaders</source>
+        <translation>Shader</translation>
+    </message>
+    <message>
+        <source>Screenshots</source>
+        <translation>Screenshot</translation>
+    </message>
+    <message>
+        <source>No kubik.gg server has played in it yet. Servers that need the same Minecraft and loader share it.</source>
+        <translation>Belum ada server kubik.gg yang main di sini. Server yang butuh Minecraft dan loader yang sama bakal pakai instance ini bareng.</translation>
+    </message>
+    <message>
+        <source>Modpack</source>
+        <translation>Modpack</translation>
+    </message>
+</context>
+<context>
+    <name>KubikModDelegate</name>
+    <message>
+        <source>Server mod</source>
+        <translation>Mod server</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Hapus</translation>
+    </message>
+    <message>
+        <source>installed for your server</source>
+        <translation>dipasang buat server kamu</translation>
+    </message>
+    <message>
+        <source>installed for %1</source>
+        <translation>dipasang buat %1</translation>
+    </message>
+    <message>
+        <source>added by you</source>
+        <translation>ditambahin sama kamu</translation>
+    </message>
+    <message>
+        <source>off</source>
+        <translation>mati</translation>
+    </message>
+    <message>
+        <source>KubikLauncher puts this in for the server you join and takes it out for a server that does not need it.</source>
+        <translation>KubikLauncher masang ini buat server yang kamu join, dan nyabut lagi buat server yang nggak butuh.</translation>
     </message>
 </context>
 </TS>

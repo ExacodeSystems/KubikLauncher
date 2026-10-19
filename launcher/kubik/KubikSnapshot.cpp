@@ -38,6 +38,7 @@
 #include "ui/instanceview/InstanceView.h"
 #include "ui/kubik/KubikHomePage.h"
 #include "ui/kubik/KubikInstanceDelegate.h"
+#include "ui/kubik/KubikInstancePage.h"
 #include "ui/kubik/KubikProfileCard.h"
 #include "ui/kubik/KubikServerPage.h"
 #include "ui/kubik/KubikServerTiles.h"
@@ -207,10 +208,43 @@ void startIfRequested()
               return page && !page->isPlaying();
           },
           240 },
+        // The install log Play kept, opened.
+        { "Play-details",
+          [](QMainWindow* window) {
+              if (auto* toggle = window->findChild<QPushButton*>("kubikDetailsToggle")) {
+                  toggle->click();
+              }
+          } },
         { "Instances-after-play",
           [](QMainWindow* window) {
               if (auto* sidebar = window->findChild<KubikSidebar*>()) {
                   sidebar->setCurrentPage(KubikSidebar::Instances);
+              }
+          } },
+        // The instance Play made, on each of its tabs.
+        { "Instance-overview",
+          [](QMainWindow* window) {
+              const QString id = firstInstanceId(window);
+              if (auto* home = window->findChild<KubikHomePage*>(); home && !id.isEmpty()) {
+                  emit home->instanceOpened(id);
+              }
+          } },
+        { "Instance-mods",
+          [](QMainWindow* window) {
+              if (auto* page = window->findChild<KubikInstancePage*>()) {
+                  page->showTab(KubikInstancePage::Mods);
+              }
+          } },
+        { "Instance-logs",
+          [](QMainWindow* window) {
+              if (auto* page = window->findChild<KubikInstancePage*>()) {
+                  page->showTab(KubikInstancePage::Logs);
+              }
+          } },
+        { "Instance-advanced",
+          [](QMainWindow* window) {
+              if (auto* page = window->findChild<KubikInstancePage*>()) {
+                  page->showTab(KubikInstancePage::Advanced);
               }
           } },
         { "Shared-server", [](QMainWindow* window) { openServer(window, shareServer); } },

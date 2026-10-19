@@ -909,8 +909,16 @@ SET(LAUNCHER_SOURCES
     ui/kubik/KubikHomePage.h
     ui/kubik/KubikInstanceDelegate.cpp
     ui/kubik/KubikInstanceDelegate.h
+    ui/kubik/KubikInstanceAdvanced.cpp
+    ui/kubik/KubikInstanceAdvanced.h
     ui/kubik/KubikInstanceInfo.cpp
     ui/kubik/KubikInstanceInfo.h
+    ui/kubik/KubikInstanceLogs.cpp
+    ui/kubik/KubikInstanceLogs.h
+    ui/kubik/KubikInstanceMods.cpp
+    ui/kubik/KubikInstanceMods.h
+    ui/kubik/KubikInstanceOverview.cpp
+    ui/kubik/KubikInstanceOverview.h
     ui/kubik/KubikInstancePage.cpp
     ui/kubik/KubikInstancePage.h
     ui/kubik/KubikInstancePicker.cpp

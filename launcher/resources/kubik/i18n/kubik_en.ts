@@ -99,4 +99,14 @@
         </translation>
     </message>
 </context>
+<context>
+    <name>KubikInstanceMods</name>
+    <message numerus="yes">
+        <source>%n mod(s)</source>
+        <translation>
+            <numerusform>%n mod</numerusform>
+            <numerusform>%n mods</numerusform>
+        </translation>
+    </message>
+</context>
 </TS>

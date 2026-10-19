@@ -584,6 +584,14 @@ QSlider#kubikMemory::sub-page:horizontal {
     border-radius: 3px;
 }
 
+QSlider#kubikMemory::sub-page:horizontal:disabled {
+    background-color: @block.edge@;
+}
+
+QSlider#kubikMemory::handle:horizontal:disabled {
+    background-color: @bone.faint@;
+}
+
 QSlider#kubikMemory::handle:horizontal {
     width: 18px;
     height: 18px;
@@ -607,4 +615,48 @@ QSlider#kubikMemory::handle:horizontal {
 
 #kubikHero QPushButton#kubikHeroPlay {
     padding: 9px 30px;
+}
+
+/* A log: the install details on a server page, the Logs tab of an instance. Mono, on the rail's tone. */
+QPlainTextEdit#kubikLog {
+    color: @bone.muted@;
+    background-color: @void.raised@;
+    border: 2px solid @void.raised@;
+    border-radius: 6px;
+    padding: 6px 8px;
+}
+
+/* An instance page's tabs: words with the accent under the current one, no box. */
+QPushButton#kubikTab {
+    color: @bone.muted@;
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 6px 0;
+    font-family: "@font.display@";
+    font-size: 15px;
+    font-weight: 600;
+}
+
+QPushButton#kubikTab:hover {
+    color: @bone@;
+    background-color: transparent;
+}
+
+QPushButton#kubikTab:checked {
+    color: @bone@;
+    background-color: transparent;
+    border-bottom-color: @grass@;
+}
+
+QPushButton#kubikTab:focus {
+    padding: 6px 0;
+}
+
+/* The Mods tab's list: rows paint themselves (KubikModDelegate), so the view adds nothing. */
+QListView#kubikModList,
+QListView#kubikModList::item,
+QListView#kubikModList::item:hover {
+    background-color: transparent;
 }

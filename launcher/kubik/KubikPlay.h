@@ -21,6 +21,7 @@
 #include <QElapsedTimer>
 #include <QObject>
 #include <QPointer>
+#include <QTime>
 
 #include <optional>
 
@@ -31,6 +32,27 @@
 class BaseInstance;
 class MinecraftInstance;
 class QTimer;
+
+namespace Kubik {
+
+/**
+ * The server page's install log: what Play is doing, one timestamped line per step.
+ *
+ * A line that differs from the one before it only in its numbers (or hash-like runs) is dropped.
+ * Prism's download tasks report progress as status lines ("5 out of 3000 are done"), and a new
+ * game's assets are thousands of files: the log keeps the step, not its counter.
+ */
+class InstallLog {
+   public:
+    /** The line to show for `text` at `time`, or nothing when it is empty or only the last one's numbers moved. */
+    std::optional<QString> add(const QString& text, const QTime& time);
+    void clear() { m_last.clear(); }
+
+   private:
+    QString m_last;
+};
+
+}  // namespace Kubik
 
 /**
  * One press of Play on a kubik.gg server, from "which mods does it need" to the
@@ -78,6 +100,8 @@ class KubikPlay : public QObject {
     /** Several instances fit this server and it has not played in one yet. */
     void choiceNeeded(const QList<BaseInstance*>& candidates);
     void failed(const QString& message);
+    /** One line of the install log (Kubik::InstallLog), for the server page's "Show details". */
+    void logged(const QString& line);
     /** Everything is ready but no Minecraft account can play: the page asks the player to add one. */
     void accountNeeded();
     void launched(const QString& instanceId);
@@ -85,6 +109,9 @@ class KubikPlay : public QObject {
 
    private:
     void setStage(Stage stage, const QString& status);
+    void log(const QString& text);
+    /** A task's own status, details, steps and warnings, into the install log. */
+    void logTask(Task* task);
     void fail(const QString& message);
     void onPack(const Kubik::Pack& pack);
     void useInstance(BaseInstance* instance);
@@ -109,4 +136,5 @@ class KubikPlay : public QObject {
     bool m_over = false;
     QTimer* m_poll = nullptr;
     QElapsedTimer m_waiting;
+    Kubik::InstallLog m_log;
 };

@@ -18,6 +18,8 @@
 
 #include "KubikSyncPlan.h"
 
+#include <algorithm>
+
 #include <QHash>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -191,6 +193,13 @@ std::optional<ManagedState> readManagedState(const QByteArray& json)
         }
     }
     return state;
+}
+
+bool isManagedFile(const ManagedState& state, const QString& filename)
+{
+    static const QString disabled = QStringLiteral(".disabled");
+    const QString name = filename.endsWith(disabled) ? filename.chopped(disabled.size()) : filename;
+    return std::any_of(state.placed.cbegin(), state.placed.cend(), [&name](const ManagedFile& file) { return file.filename == name; });
 }
 
 }  // namespace Kubik

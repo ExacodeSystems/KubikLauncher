@@ -22,18 +22,28 @@
 #include <QMetaObject>
 #include <QWidget>
 
-class QGridLayout;
+#include <functional>
+
+class KubikInstanceAdvanced;
+class KubikInstanceLogs;
+class KubikInstanceMods;
+class KubikInstanceOverview;
+class QButtonGroup;
 class QLabel;
 class QPushButton;
+class QStackedWidget;
 
 /**
  * One instance, the way a game page in a launcher shows a game: a big Play
- * button, what the instance is, and a list of what can be changed, each in
- * plain words with one line saying what it is for.
+ * button, what the instance is, and under it four tabs.
  *
- * The "Manage" rows open Prism's instance window on the matching page, which
- * keeps Prism's one-window-per-instance lifecycle (saving, file watching,
- * modpack updates) exactly as it is.
+ *   Overview  the servers that play in it, its game folders, its modpack
+ *   Mods      every mod, which ones a server put there, the player's own to manage
+ *   Logs      the live game log, the last game's log, crash reports
+ *   Advanced  what it is, its own memory and Java, rename, copy, delete
+ *
+ * Everything stays in KubikLauncher's own look. Prism's instance window is one
+ * "More settings" link away on Advanced, for what these tabs leave out.
  */
 class KubikInstancePage : public QWidget {
     Q_OBJECT
@@ -42,19 +52,24 @@ class KubikInstancePage : public QWidget {
     /** The instance actions this page offers; MainWindow carries them out. */
     enum class Action { OpenFolder, ExportZip, ExportModrinth, Rename, ChangeIcon, ChangeGroup, Copy, CreateShortcut, Delete };
     Q_ENUM(Action)
+    enum Tab { Overview = 0, Mods = 1, Logs = 2, Advanced = 3 };
 
     explicit KubikInstancePage(QWidget* parent = nullptr);
 
     void setInstance(const QString& instanceId);
     QString instanceId() const { return m_instanceId; }
+    void showTab(int tab);
+    /** A kubik.gg server's name by id (Home's last fetch), for "Used by" and the Mods tab. */
+    void setServerNames(std::function<QString(const QString&)> lookup);
 
    signals:
     void backRequested();
     void playRequested(const QString& instanceId);
     void stopRequested(const QString& instanceId);
-    /** Open the instance window on one of its pages (an InstancePageProvider id). */
+    /** Open Prism's instance window on one of its pages (an InstancePageProvider id). */
     void manageRequested(const QString& instanceId, const QString& pageId);
     void actionRequested(const QString& instanceId, KubikInstancePage::Action action);
+    void serverOpened(const QString& serverId);
 
    protected:
     void changeEvent(QEvent* event) override;
@@ -62,7 +77,6 @@ class KubikInstancePage : public QWidget {
    private:
     void retranslate();
     void refresh();
-    void rebuildManageRows();
 
     QString m_instanceId;
     QList<QMetaObject::Connection> m_instanceConnections;
@@ -74,8 +88,13 @@ class KubikInstancePage : public QWidget {
     QLabel* m_stats;
     QPushButton* m_play;
     QPushButton* m_folder;
-    QPushButton* m_export;
     QPushButton* m_more;
-    QLabel* m_manageTitle;
-    QGridLayout* m_manageGrid;
+
+    QButtonGroup* m_tabs;
+    QList<QPushButton*> m_tabButtons;
+    QStackedWidget* m_tabPages;
+    KubikInstanceOverview* m_overview;
+    KubikInstanceMods* m_mods;
+    KubikInstanceLogs* m_logs;
+    KubikInstanceAdvanced* m_advanced;
 };

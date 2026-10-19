@@ -19,6 +19,7 @@
 #include "KubikPlay.h"
 
 #include <QDesktopServices>
+#include <QRegularExpression>
 #include <QTimer>
 #include <QUrl>
 
@@ -86,9 +87,49 @@ QString KubikPlay::describe(const Kubik::ApiError& error)
     return tr("Something went wrong talking to kubik.gg (%1). Try again in a minute.").arg(code);
 }
 
+std::optional<QString> Kubik::InstallLog::add(const QString& text, const QTime& time)
+{
+    const QString line = text.simplified();
+    // Numbers and hash-like runs (a file's checksum in its name) are what changes between two lines of
+    // one step's progress.
+    static const QRegularExpression counters(QStringLiteral("[0-9a-fA-F]{6,}|\\d+"));
+    const QString shape = QString(line).replace(counters, QStringLiteral("#"));
+    if (line.isEmpty() || shape == m_last) {
+        return std::nullopt;
+    }
+    m_last = shape;
+    return QStringLiteral("[%1] %2").arg(time.toString(QStringLiteral("HH:mm:ss")), line);
+}
+
 void KubikPlay::setStage(Stage stage, const QString& status)
 {
+    log(status);
     emit stageChanged(stage, status);
+}
+
+void KubikPlay::log(const QString& text)
+{
+    if (const auto line = m_log.add(text, QTime::currentTime())) {
+        emit logged(*line);
+    }
+}
+
+void KubikPlay::logTask(Task* task)
+{
+    // The task's status is the step it is on. Its details (file names, speeds) and the progress of each
+    // sub-step change many times a second, so a sub-step is logged only when it fails.
+    connect(task, &Task::status, this, [this](const QString& status) {
+        // A location ("…minecraft.net/…/96a84af9…") is one file of a download in flight, not a step.
+        if (!status.contains('/') && !status.contains('\\')) {
+            log(status);
+        }
+    });
+    connect(task, &Task::warningLogged, this, [this](const QString& warning) { log(tr("Warning: %1").arg(warning)); });
+    connect(task, &Task::stepProgress, this, [this](const TaskStepProgress& step) {
+        if (step.state == TaskStepState::Failed) {
+            log(step.details.isEmpty() ? tr("Failed: %1").arg(step.status) : tr("Failed: %1 (%2)").arg(step.status, step.details));
+        }
+    });
 }
 
 void KubikPlay::fail(const QString& message)
@@ -96,6 +137,7 @@ void KubikPlay::fail(const QString& message)
     if (m_over) {
         return;
     }
+    log(message);
     m_over = true;
     if (m_poll) {
         m_poll->stop();
@@ -226,6 +268,7 @@ void KubikPlay::install()
         }
     });
     m_installTask.reset(list->wrapInstanceTask(task));
+    logTask(m_installTask.get());
     // Prism's own status lines here ("Executing task 5 out of 5") say nothing to a player; the stage
     // line stays "Installing Fabric 26.2…" and the bar shows how far along it is.
     connect(m_installTask.get(), &Task::progress, this, &KubikPlay::progressChanged);
@@ -263,6 +306,7 @@ void KubikPlay::sync()
     m_syncTask = makeShared<KubikSyncTask>(m_instance, *m_pack);
     connect(m_syncTask.get(), &Task::progress, this, &KubikPlay::progressChanged);
     connect(m_syncTask.get(), &Task::status, this, [this](const QString& status) { setStage(Stage::Syncing, status); });
+    connect(m_syncTask.get(), &Task::warningLogged, this, [this](const QString& warning) { log(tr("Warning: %1").arg(warning)); });
     connect(m_syncTask.get(), &Task::succeeded, this, [this] {
         m_synced = true;
         launchIfReady();
@@ -332,6 +376,7 @@ void KubikPlay::launchIfReady()
     // synced by now, so adding an account on the server page and pressing Play again goes straight in.
     if (!APPLICATION->accounts()->anyAccountIsValid()) {
         m_over = true;
+        log(tr("Stopped before starting Minecraft: no Minecraft account can play yet."));
         emit accountNeeded();
         return;
     }
@@ -340,6 +385,7 @@ void KubikPlay::launchIfReady()
     const auto target = std::make_shared<MinecraftTarget>(MinecraftTarget::parse(m_pack->address, false));
     if (APPLICATION->launch(m_instance, LaunchMode::Normal, target)) {
         Kubik::recordLaunch(m_server.id, m_instance);
+        log(tr("Minecraft is starting and joins %1.").arg(m_pack->address));
         emit launched(m_instance->id());
     } else {
         emit failed(tr("Minecraft could not be started from %1.").arg(m_instance->name()));

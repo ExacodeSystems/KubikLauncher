@@ -226,6 +226,18 @@ void KubikSyncTask::apply()
         }
     }
 
+    // Named for the server page's install log, which shows each status as a line.
+    if (!m_plan.remove.isEmpty()) {
+        setStatus(tr("Removed mods another server needed: %1").arg(m_plan.remove.join(", ")));
+    }
+    if (!m_plan.place.isEmpty()) {
+        QStringList placed;
+        for (const auto& mod : std::as_const(m_plan.place)) {
+            placed << mod.filename;
+        }
+        setStatus(tr("Put in place for %1: %2").arg(m_pack.serverName, placed.join(", ")));
+    }
+
     applyGameFiles(m_plan.next);
 
     QSaveFile sidecar(sidecarPath(m_instance));

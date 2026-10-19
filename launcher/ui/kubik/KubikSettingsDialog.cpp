@@ -65,13 +65,6 @@ QLabel* label(const char* objectName, QWidget* parent)
     return l;
 }
 
-/** "4 GB", "1.5 GB": memory the way a player reads it. */
-QString gigabytes(int mib)
-{
-    const double gb = mib / 1024.0;
-    return KubikSettingsDialog::tr("%1 GB").arg(QString::number(gb, 'f', mib % 1024 == 0 ? 0 : 1));
-}
-
 }  // namespace
 
 KubikSettingsDialog::KubikSettingsDialog(const QString& page, QWidget* parent)
@@ -163,6 +156,24 @@ KubikSettingsDialog::KubikSettingsDialog(const QString& page, QWidget* parent)
 }
 
 KubikSettingsDialog::~KubikSettingsDialog() = default;
+
+QString KubikSettingsDialog::gigabytes(int mib)
+{
+    const double gb = mib / 1024.0;
+    return tr("%1 GB").arg(QString::number(gb, 'f', mib % 1024 == 0 ? 0 : 1));
+}
+
+QString KubikSettingsDialog::memoryNote(int max)
+{
+    const auto system = HardwareInfo::totalRamMiB();
+    if (static_cast<uint64_t>(max) >= system) {
+        return tr("That is all of this computer's memory. Minecraft would leave nothing for everything else, so lower it.");
+    }
+    if (static_cast<uint64_t>(max) * 10 > system * 9) {
+        return tr("That is close to all of this computer's memory. If the computer slows down while you play, lower it.");
+    }
+    return tr("The most memory Minecraft may use. Recommended for this computer: %1.").arg(gigabytes(SysInfo::defaultMaxJvmMem()));
+}
 
 QWidget* KubikSettingsDialog::pageFrame(QWidget* body)
 {
@@ -513,13 +524,6 @@ void KubikSettingsDialog::updateMemory()
         return;
     }
     const int max = m_memory->value() * MEMORY_STEP;
-    const auto system = HardwareInfo::totalRamMiB();
     m_memoryValue->setText(gigabytes(max));
-    QString note = tr("The most memory Minecraft may use. Recommended for this computer: %1.").arg(gigabytes(SysInfo::defaultMaxJvmMem()));
-    if (static_cast<uint64_t>(max) >= system) {
-        note = tr("That is all of this computer's memory. Minecraft would leave nothing for everything else, so lower it.");
-    } else if (static_cast<uint64_t>(max) * 10 > system * 9) {
-        note = tr("That is close to all of this computer's memory. If the computer slows down while you play, lower it.");
-    }
-    m_memoryNote->setText(note);
+    m_memoryNote->setText(memoryNote(max));
 }

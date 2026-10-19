@@ -371,6 +371,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
             }
         });
         connect(m_instancePage, &KubikInstancePage::actionRequested, this, &MainWindow::performInstanceAction);
+        connect(m_instancePage, &KubikInstancePage::serverOpened, this, [this](const QString& id) { showServerPage(id); });
+        m_instancePage->setServerNames([this](const QString& id) {
+            const auto* server = m_servers->server(id);
+            return server ? server->name : QString();
+        });
 
         ui->horizontalLayout->addWidget(m_sidebar);
         ui->horizontalLayout->addWidget(m_pages);

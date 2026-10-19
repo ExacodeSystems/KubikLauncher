@@ -32,6 +32,7 @@ class BaseInstance;
 class KubikPlay;
 class QFrame;
 class QLabel;
+class QPlainTextEdit;
 class QProgressBar;
 class QPushButton;
 class QVBoxLayout;
@@ -84,6 +85,7 @@ class KubikServerPage : public QWidget {
     void watchInstance();
     void updateJoinCard();
     void updateAccountNote();
+    void updateDetails();
     void chooseInstance();
     void onPlayFinished();
 
@@ -104,6 +106,11 @@ class KubikServerPage : public QWidget {
     QPushButton* m_open;
     QLabel* m_progressText;
     QProgressBar* m_progress;
+    // The install log (KubikPlay::logged): what Play did, one line per step, kept after a failure.
+    QPushButton* m_detailsToggle;
+    QPushButton* m_detailsCopy;
+    QPlainTextEdit* m_details;
+    bool m_detailsOpen = false;
 
     QLabel* m_accountNote;
 

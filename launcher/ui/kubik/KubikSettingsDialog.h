@@ -63,6 +63,11 @@ class KubikSettingsDialog : public QDialog {
     explicit KubikSettingsDialog(const QString& page, QWidget* parent = nullptr);
     ~KubikSettingsDialog() override;
 
+    /** "4 GB", "1.5 GB": memory the way a player reads it. */
+    static QString gigabytes(int mib);
+    /** The sentence under a memory slider: what it is, what this computer can spare, or why to lower it. */
+    static QString memoryNote(int maxMib);
+
    protected:
     void changeEvent(QEvent* event) override;
     void done(int result) override;

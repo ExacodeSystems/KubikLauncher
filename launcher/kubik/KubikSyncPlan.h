@@ -97,4 +97,7 @@ SyncPlan planSync(const ManagedState& current, const Pack& pack, const QList<Loc
 QByteArray writeManagedState(const ManagedState& state);
 std::optional<ManagedState> readManagedState(const QByteArray& json);
 
+/** True when `filename` (enabled, or its `.disabled` form) is a file sync placed: a server's mod, not the player's. */
+bool isManagedFile(const ManagedState& state, const QString& filename);
+
 }  // namespace Kubik

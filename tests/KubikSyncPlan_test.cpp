@@ -222,6 +222,17 @@ class KubikSyncPlanTest : public QObject {
         QVERIFY(!readManagedState("not json").has_value());
         QVERIFY(!readManagedState(R"({"formatVersion": 2})").has_value());
     }
+
+    void tellsServerModsFromThePlayersInEitherForm()
+    {
+        ManagedState state;
+        state.placed = { { "fabric-api.jar", sha('a') }, { "sodium.jar", sha('b') } };
+        QVERIFY(isManagedFile(state, "fabric-api.jar"));
+        QVERIFY(isManagedFile(state, "sodium.jar.disabled"));
+        QVERIFY(!isManagedFile(state, "my-minimap.jar"));
+        QVERIFY(!isManagedFile(state, "fabric-api.jar.bak"));
+        QVERIFY(!isManagedFile(ManagedState{}, "fabric-api.jar"));
+    }
 };
 
 QTEST_GUILESS_MAIN(KubikSyncPlanTest)

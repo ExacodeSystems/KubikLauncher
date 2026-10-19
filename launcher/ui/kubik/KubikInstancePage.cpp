@@ -18,14 +18,16 @@
 
 #include "KubikInstancePage.h"
 
+#include <QButtonGroup>
 #include <QEvent>
-#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QStackedWidget>
 #include <QStyle>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "Application.h"
@@ -33,47 +35,39 @@
 #include "icons/IconList.h"
 #include "kubik/KubikWindowChrome.h"
 #include "minecraft/MinecraftInstance.h"
+#include "ui/kubik/KubikInstanceAdvanced.h"
 #include "ui/kubik/KubikInstanceInfo.h"
+#include "ui/kubik/KubikInstanceLogs.h"
+#include "ui/kubik/KubikInstanceMods.h"
+#include "ui/kubik/KubikInstanceOverview.h"
 
 namespace {
 
 constexpr int MARGIN = 32;
-constexpr int ART_SIDE = 168;
-constexpr int ICON_SIDE = 128;
+constexpr int ART_SIDE = 140;
+constexpr int ICON_SIDE = 104;
 
-/** A row of the "Manage" list: an icon, a name and one line of what it is for. */
-QPushButton* manageRow(const QString& icon, const QString& title, const QString& description, QWidget* parent)
+/** A tab whose content is a column of sections: it scrolls on its own, under the fixed hero and tabs. */
+QWidget* scrolling(QWidget* content)
 {
-    auto* row = new QPushButton(parent);
-    row->setProperty("kubikRole", "row");
-    row->setCursor(Qt::PointingHandCursor);
-
-    auto* iconLabel = new QLabel(row);
-    iconLabel->setPixmap(QIcon::fromTheme(icon).pixmap(24, 24));
-    auto* titleLabel = new QLabel(title, row);
-    titleLabel->setObjectName("kubikSectionTitle");
-    auto* descriptionLabel = new QLabel(description, row);
-    descriptionLabel->setObjectName("kubikPageSubtitle");
-    for (auto* label : { iconLabel, titleLabel, descriptionLabel }) {
-        // The row is the button; its labels must not swallow the click.
-        label->setAttribute(Qt::WA_TransparentForMouseEvents);
-    }
-
-    auto* words = new QVBoxLayout();
-    words->setSpacing(2);
-    words->addWidget(titleLabel);
-    words->addWidget(descriptionLabel);
-    auto* layout = new QHBoxLayout(row);
-    layout->setContentsMargins(16, 12, 16, 12);
-    layout->setSpacing(14);
-    layout->addWidget(iconLabel, 0, Qt::AlignVCenter);
-    layout->addLayout(words, 1);
-    return row;
+    auto* page = new QWidget();
+    page->setObjectName("kubikPage");
+    auto* column = new QVBoxLayout(page);
+    column->setContentsMargins(0, 4, 12, 12);
+    content->setParent(page);
+    column->addWidget(content);
+    column->addStretch();
+    auto* scroll = new QScrollArea();
+    scroll->setWidget(page);
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    return scroll;
 }
 
 }  // namespace
 
-KubikInstancePage::KubikInstancePage(QWidget* parent) : QWidget(parent)
+KubikInstancePage::KubikInstancePage(QWidget* parent) : QWidget(parent), m_tabs(new QButtonGroup(this))
 {
     setObjectName("kubikPage");
     setAttribute(Qt::WA_StyledBackground);
@@ -89,13 +83,17 @@ KubikInstancePage::KubikInstancePage(QWidget* parent) : QWidget(parent)
     m_art->setFixedSize(ART_SIDE, ART_SIDE);
     m_art->setAlignment(Qt::AlignCenter);
 
+    // Wrapping, so a long name or a long translation never pushes the page wider than the window.
     m_name = new QLabel(this);
     m_name->setObjectName("kubikPageTitle");
     m_name->setTextFormat(Qt::PlainText);
+    m_name->setWordWrap(true);
     m_about = new QLabel(this);
     m_about->setObjectName("kubikPageBody");
+    m_about->setWordWrap(true);
     m_stats = new QLabel(this);
     m_stats->setObjectName("kubikPageSubtitle");
+    m_stats->setWordWrap(true);
 
     m_play = new QPushButton(this);
     m_play->setObjectName("kubikHeroPlay");
@@ -111,19 +109,17 @@ KubikInstancePage::KubikInstancePage(QWidget* parent) : QWidget(parent)
 
     m_folder = new QPushButton(this);
     m_folder->setIcon(QIcon::fromTheme("viewfolder"));
+    m_folder->setCursor(Qt::PointingHandCursor);
     connect(m_folder, &QPushButton::clicked, this, [this] { emit actionRequested(m_instanceId, Action::OpenFolder); });
-    m_export = new QPushButton(this);
-    m_export->setIcon(QIcon::fromTheme("export"));
-    m_export->setMenu(new QMenu(m_export));
     m_more = new QPushButton(this);
     m_more->setMenu(new QMenu(m_more));
+    m_more->setCursor(Qt::PointingHandCursor);
 
     auto* actions = new QHBoxLayout();
     actions->setSpacing(10);
     actions->addWidget(m_play);
     actions->addSpacing(6);
     actions->addWidget(m_folder);
-    actions->addWidget(m_export);
     actions->addWidget(m_more);
     actions->addStretch();
 
@@ -133,61 +129,100 @@ KubikInstancePage::KubikInstancePage(QWidget* parent) : QWidget(parent)
     words->addWidget(m_name);
     words->addWidget(m_about);
     words->addWidget(m_stats);
-    words->addSpacing(14);
+    words->addSpacing(12);
     words->addLayout(actions);
     words->addStretch();
 
     auto* hero = new QHBoxLayout();
-    hero->setSpacing(28);
+    hero->setSpacing(24);
     hero->addWidget(m_art, 0, Qt::AlignTop);
     hero->addLayout(words, 1);
 
-    // ── Manage: everything that can be changed, in plain words ──────────────
-    m_manageTitle = new QLabel(this);
-    m_manageTitle->setObjectName("kubikSectionTitle");
-    m_manageGrid = new QGridLayout();
-    m_manageGrid->setHorizontalSpacing(12);
-    m_manageGrid->setVerticalSpacing(12);
+    // ── Tabs ────────────────────────────────────────────────────────────────
+    m_overview = new KubikInstanceOverview();
+    m_mods = new KubikInstanceMods(this);
+    m_logs = new KubikInstanceLogs(this);
+    m_advanced = new KubikInstanceAdvanced();
+    m_tabPages = new QStackedWidget(this);
+    m_tabPages->insertWidget(Overview, scrolling(m_overview));
+    m_tabPages->insertWidget(Mods, m_mods);
+    m_tabPages->insertWidget(Logs, m_logs);
+    m_tabPages->insertWidget(Advanced, scrolling(m_advanced));
 
-    auto* content = new QWidget(this);
-    // The scroll area's viewport would otherwise show the window colour behind the page.
-    content->setObjectName("kubikPage");
-    content->setAttribute(Qt::WA_StyledBackground);
-    auto* contentLayout = new QVBoxLayout(content);
-    contentLayout->setContentsMargins(MARGIN, 16 + KubikWindowChrome::titleBarInset(), MARGIN, MARGIN);
-    contentLayout->setSpacing(0);
-    contentLayout->addWidget(m_back, 0, Qt::AlignLeft);
-    contentLayout->addSpacing(18);
-    contentLayout->addLayout(hero);
-    contentLayout->addSpacing(40);
-    contentLayout->addWidget(m_manageTitle);
-    contentLayout->addSpacing(12);
-    contentLayout->addLayout(m_manageGrid);
-    contentLayout->addStretch();
+    auto* tabRow = new QHBoxLayout();
+    tabRow->setSpacing(22);
+    for (int tab : { Overview, Mods, Logs, Advanced }) {
+        auto* button = new QPushButton(this);
+        button->setObjectName("kubikTab");
+        button->setCheckable(true);
+        button->setCursor(Qt::PointingHandCursor);
+        m_tabs->addButton(button, tab);
+        m_tabButtons << button;
+        tabRow->addWidget(button);
+    }
+    tabRow->addStretch();
+    connect(m_tabs, &QButtonGroup::idClicked, this, &KubikInstancePage::showTab);
 
-    auto* scroll = new QScrollArea(this);
-    scroll->setWidgetResizable(true);
-    scroll->setWidget(content);
+    connect(m_overview, &KubikInstanceOverview::serverOpened, this, &KubikInstancePage::serverOpened);
+    connect(m_advanced, &KubikInstanceAdvanced::requested, this, [this](KubikInstanceAdvanced::Request request) {
+        using Request = KubikInstanceAdvanced::Request;
+        switch (request) {
+            case Request::Rename:
+                emit actionRequested(m_instanceId, Action::Rename);
+                break;
+            case Request::ChangeIcon:
+                emit actionRequested(m_instanceId, Action::ChangeIcon);
+                break;
+            case Request::Copy:
+                emit actionRequested(m_instanceId, Action::Copy);
+                break;
+            case Request::Delete:
+                emit actionRequested(m_instanceId, Action::Delete);
+                break;
+            case Request::MoreSettings:
+                emit manageRequested(m_instanceId, QStringLiteral("settings"));
+                break;
+        }
+    });
+
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(scroll);
+    layout->setContentsMargins(MARGIN, 16 + KubikWindowChrome::titleBarInset(), MARGIN, 20);
+    layout->setSpacing(0);
+    layout->addWidget(m_back, 0, Qt::AlignLeft);
+    layout->addSpacing(14);
+    layout->addLayout(hero);
+    layout->addSpacing(22);
+    layout->addLayout(tabRow);
+    layout->addSpacing(14);
+    layout->addWidget(m_tabPages, 1);
 
     connect(KubikInstanceInfo::instance(), &KubikInstanceInfo::summaryChanged, this, [this](const QString& id) {
         if (id == m_instanceId) {
             refresh();
         }
     });
-    // Deleted while open: there is nothing left to show, so go home.
+    // Deleted while open: there is nothing left to show, so go home. Checked a moment later, because a
+    // rename that renames the folder too reloads the list (old id gone) before it points this page at
+    // the new id.
     const auto checkStillThere = [this] {
-        if (!m_instanceId.isEmpty() && !APPLICATION->instances()->getInstanceById(m_instanceId)) {
-            m_instanceId.clear();
-            emit backRequested();
-        }
+        QTimer::singleShot(0, this, [this] {
+            if (!m_instanceId.isEmpty() && !APPLICATION->instances()->getInstanceById(m_instanceId)) {
+                m_instanceId.clear();
+                emit backRequested();
+            }
+        });
     };
     connect(APPLICATION->instances(), &QAbstractItemModel::rowsRemoved, this, checkStillThere);
     connect(APPLICATION->instances(), &QAbstractItemModel::modelReset, this, checkStillThere);
 
     retranslate();
+    showTab(Overview);
+}
+
+void KubikInstancePage::setServerNames(std::function<QString(const QString&)> lookup)
+{
+    m_overview->setServerNames(lookup);
+    m_mods->setServerNames(lookup);
 }
 
 void KubikInstancePage::setInstance(const QString& instanceId)
@@ -196,16 +231,32 @@ void KubikInstancePage::setInstance(const QString& instanceId)
         disconnect(connection);
     }
     m_instanceConnections.clear();
+    const bool another = instanceId != m_instanceId;
     m_instanceId = instanceId;
 
-    if (auto* instance = APPLICATION->instances()->getInstanceById(instanceId)) {
+    auto* instance = dynamic_cast<MinecraftInstance*>(APPLICATION->instances()->getInstanceById(instanceId));
+    if (instance) {
         m_instanceConnections << connect(instance, &BaseInstance::runningStatusChanged, this, &KubikInstancePage::refresh);
         m_instanceConnections << connect(instance, &BaseInstance::propertiesChanged, this, &KubikInstancePage::refresh);
     }
-    rebuildManageRows();
+    m_overview->setInstance(instance);
+    m_mods->setInstance(instance);
+    m_logs->setInstance(instance);
+    m_advanced->setInstance(instance);
+    if (another) {
+        showTab(Overview);
+    }
     refresh();
     // Keyboard focus starts on the one big action, so Enter plays.
     m_play->setFocus();
+}
+
+void KubikInstancePage::showTab(int tab)
+{
+    if (auto* button = m_tabs->button(tab)) {
+        button->setChecked(true);
+    }
+    m_tabPages->setCurrentIndex(tab);
 }
 
 void KubikInstancePage::retranslate()
@@ -213,67 +264,23 @@ void KubikInstancePage::retranslate()
     m_back->setText(tr("← Home"));
     m_folder->setText(tr("Open folder"));
     m_folder->setToolTip(tr("Open this instance's files in your file manager"));
-    m_export->setText(tr("Export"));
-    m_export->setToolTip(tr("Save this instance as a file to share or back up"));
-    auto* exportMenu = m_export->menu();
-    exportMenu->clear();
-    exportMenu->addAction(tr("As a backup (.zip)"), this, [this] { emit actionRequested(m_instanceId, Action::ExportZip); });
-    exportMenu->addAction(tr("As a Modrinth modpack (.mrpack)"), this,
-                          [this] { emit actionRequested(m_instanceId, Action::ExportModrinth); });
     m_more->setText(tr("More"));
-    m_manageTitle->setText(tr("Manage"));
+    const QStringList tabs = { tr("Overview"), tr("Mods"), tr("Logs"), tr("Advanced") };
+    for (int i = 0; i < m_tabButtons.size(); ++i) {
+        m_tabButtons[i]->setText(tabs.value(i));
+    }
 
+    // Rename, icon, copy and delete live on the Advanced tab; More keeps what has no other home.
     auto* menu = m_more->menu();
     menu->clear();
-    const QList<QPair<QString, Action>> items = {
-        { tr("Rename"), Action::Rename },
-        { tr("Change icon"), Action::ChangeIcon },
-        { tr("Move to group"), Action::ChangeGroup },
-        { tr("Make a copy"), Action::Copy },
-        { tr("Create desktop shortcut"), Action::CreateShortcut },
-    };
-    for (const auto& [label, action] : items) {
-        menu->addAction(label, this, [this, action] { emit actionRequested(m_instanceId, action); });
-    }
+    menu->addAction(tr("Export as a backup (.zip)"), this, [this] { emit actionRequested(m_instanceId, Action::ExportZip); });
+    menu->addAction(tr("Export as a Modrinth modpack (.mrpack)"), this,
+                    [this] { emit actionRequested(m_instanceId, Action::ExportModrinth); });
     menu->addSeparator();
-    menu->addAction(tr("Delete instance"), this, [this] { emit actionRequested(m_instanceId, Action::Delete); });
+    menu->addAction(tr("Move to group"), this, [this] { emit actionRequested(m_instanceId, Action::ChangeGroup); });
+    menu->addAction(tr("Create desktop shortcut"), this, [this] { emit actionRequested(m_instanceId, Action::CreateShortcut); });
 
-    rebuildManageRows();
     refresh();
-}
-
-void KubikInstancePage::rebuildManageRows()
-{
-    while (auto* item = m_manageGrid->takeAt(0)) {
-        delete item->widget();
-        delete item;
-    }
-    auto* instance = APPLICATION->instances()->getInstanceById(m_instanceId);
-
-    struct Row {
-        QString page, icon, title, description;
-    };
-    QList<Row> rows;
-    if (instance && instance->isManagedPack()) {
-        rows << Row{ "managed_pack", "minecraft", tr("Modpack"), tr("Update the modpack or switch its version") };
-    }
-    rows << Row{ "mods", "loadermods", tr("Mods"), tr("Add, remove or update mods") }
-         << Row{ "resourcepacks", "resourcepacks", tr("Resource packs"), tr("Change how blocks and items look") }
-         << Row{ "shaderpacks", "shaderpacks", tr("Shaders"), tr("Lighting and shadows (needs Iris or OptiFine)") }
-         << Row{ "worlds", "worlds", tr("Worlds"), tr("Back up, copy or delete your saves") }
-         << Row{ "servers", "server", tr("Servers"), tr("The servers in this instance's multiplayer list") }
-         << Row{ "screenshots", "screenshots", tr("Screenshots"), tr("Everything you captured in game") }
-         << Row{ "version", "minecraft", tr("Version and loader"), tr("Change the Minecraft version or mod loader") }
-         << Row{ "settings", "instance-settings", tr("Settings"), tr("Memory, Java and window size") }
-         << Row{ "logs", "log", tr("Logs"), tr("What the game printed, for fixing problems") };
-
-    for (int i = 0; i < rows.size(); ++i) {
-        const auto& row = rows[i];
-        auto* button = manageRow(row.icon, row.title, row.description, this);
-        const QString page = row.page;
-        connect(button, &QPushButton::clicked, this, [this, page] { emit manageRequested(m_instanceId, page); });
-        m_manageGrid->addWidget(button, i / 2, i % 2);
-    }
 }
 
 void KubikInstancePage::refresh()

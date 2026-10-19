@@ -27,6 +27,7 @@
 #include <QLabel>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QScrollArea>
@@ -167,6 +168,32 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     m_progress->setMaximumWidth(420);
     m_accountNote = bodyText(content, "kubikPageNote");
 
+    m_detailsToggle = new QPushButton(content);
+    m_detailsToggle->setObjectName("kubikDetailsToggle");
+    m_detailsToggle->setProperty("kubikRole", "link");
+    m_detailsToggle->setCursor(Qt::PointingHandCursor);
+    connect(m_detailsToggle, &QPushButton::clicked, this, [this] {
+        m_detailsOpen = !m_detailsOpen;
+        updateDetails();
+    });
+    m_detailsCopy = new QPushButton(content);
+    m_detailsCopy->setProperty("kubikRole", "link");
+    m_detailsCopy->setCursor(Qt::PointingHandCursor);
+    connect(m_detailsCopy, &QPushButton::clicked, this, [this] { QGuiApplication::clipboard()->setText(m_details->toPlainText()); });
+    m_details = new QPlainTextEdit(content);
+    m_details->setObjectName("kubikLog");
+    m_details->setReadOnly(true);
+    // Wrapped: a box that scrolls sideways hides every short line behind the long one it scrolled to.
+    m_details->setLineWrapMode(QPlainTextEdit::WidgetWidth);
+    m_details->setFixedHeight(168);
+    m_details->setMaximumWidth(720);
+    m_details->setFont(QFont(KubikBrand::monoFamily(), 11));
+    auto* detailsRow = new QHBoxLayout();
+    detailsRow->setSpacing(16);
+    detailsRow->addWidget(m_detailsToggle);
+    detailsRow->addWidget(m_detailsCopy);
+    detailsRow->addStretch();
+
     m_notice = bodyText(content);
     m_noticeAction = new QPushButton(content);
     m_noticeAction->setCursor(Qt::PointingHandCursor);
@@ -208,6 +235,8 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     words->addLayout(actions);
     words->addWidget(m_progressText);
     words->addWidget(m_progress);
+    words->addLayout(detailsRow);
+    words->addWidget(m_details);
     words->addWidget(m_accountNote);
     words->addStretch();
 
@@ -300,6 +329,8 @@ void KubikServerPage::setServer(const Kubik::Server& server)
         m_packError.clear();
         m_copy->setText(QString());
         m_joinOpen = false;
+        m_details->clear();
+        m_detailsOpen = false;
     }
 
     // The same picture as the server's tile on Home, so the two read as one server.
@@ -499,6 +530,17 @@ void KubikServerPage::updateJoinCard()
     m_joinSteps->setText(steps.join("\n\n"));
 }
 
+void KubikServerPage::updateDetails()
+{
+    // Shown once Play has said something, and kept after it ends: a failed install is when it matters.
+    const bool any = !m_details->document()->isEmpty();
+    m_detailsToggle->setVisible(any);
+    m_detailsToggle->setText(m_detailsOpen ? tr("Hide details") : tr("Show details"));
+    m_detailsCopy->setVisible(any && m_detailsOpen);
+    m_detailsCopy->setText(tr("Copy"));
+    m_details->setVisible(any && m_detailsOpen);
+}
+
 void KubikServerPage::updateAccountNote()
 {
     const auto account = KubikAccounts::current();
@@ -537,6 +579,7 @@ void KubikServerPage::updatePlayState()
     m_playButton->style()->polish(m_playButton);
     m_progressText->setVisible(running);
     m_progress->setVisible(running);
+    updateDetails();
     m_instanceChange->setEnabled(!running);
 }
 
@@ -565,7 +608,12 @@ void KubikServerPage::play(bool newInstance)
         return;
     }
     showNotice({});
+    m_details->clear();
     m_play = new KubikPlay(m_server, this);
+    connect(m_play, &KubikPlay::logged, this, [this](const QString& line) {
+        m_details->appendPlainText(line);
+        updateDetails();
+    });
     m_play->setForceNewInstance(newInstance);
     connect(m_play, &KubikPlay::stageChanged, this, [this](KubikPlay::Stage stage, const QString& status) {
         m_progressText->setText(status);
