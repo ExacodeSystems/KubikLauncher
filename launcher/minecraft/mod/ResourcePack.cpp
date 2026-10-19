@@ -101,3 +101,19 @@ QMap<std::pair<int, int>, std::pair<Version, Version>> ResourcePack::mappings() 
 {
     return s_pack_format_versions;
 }
+
+std::optional<std::pair<int, int>> ResourcePack::formatFor(const QString& minecraftVersion)
+{
+    const Version version(minecraftVersion);
+    for (auto it = s_pack_format_versions.cbegin(); it != s_pack_format_versions.cend(); ++it) {
+        if (it.value().first <= version && version <= it.value().second) {
+            return it.key();
+        }
+    }
+    return std::nullopt;
+}
+
+std::pair<int, int> ResourcePack::newestFormat()
+{
+    return s_pack_format_versions.lastKey();
+}

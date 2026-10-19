@@ -474,6 +474,38 @@ untuk detail.</translation>
         <source>No server matches &quot;%1&quot;.</source>
         <translation>Nggak ada server yang cocok sama &quot;%1&quot;.</translation>
     </message>
+    <message>
+        <source>Jump back in</source>
+        <translation>Lanjut main</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Main</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Buka</translation>
+    </message>
+    <message>
+        <source>Pick a server: KubikLauncher installs what it needs and joins it for you.</source>
+        <translation>Pilih server: KubikLauncher masangin yang dibutuhin dan join-in buat kamu.</translation>
+    </message>
+    <message>
+        <source>All servers</source>
+        <translation>Semua server</translation>
+    </message>
+    <message>
+        <source>Copy address</source>
+        <translation>Salin alamat</translation>
+    </message>
+    <message>
+        <source>Open on kubik.gg</source>
+        <translation>Buka di kubik.gg</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t refresh your servers: %1</source>
+        <translation>Server kamu gagal diperbarui: %1</translation>
+    </message>
 </context>
 <context>
     <name>KubikSidebar</name>
@@ -540,6 +572,10 @@ untuk detail.</translation>
         <source>Can&apos;t launch offline</source>
         <translation>Nggak bisa main offline</translation>
     </message>
+    <message>
+        <source>KubikLauncher plays Microsoft accounts online only.</source>
+        <translation>KubikLauncher cuma mainin akun Microsoft secara online.</translation>
+    </message>
 </context>
 <context>
     <name>LauncherPage</name>
@@ -590,6 +626,10 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
     <message>
         <source>Prism Launcher Developers</source>
         <translation>Pengembang Prism Launcher</translation>
+    </message>
+    <message>
+        <source>No Instance Selected</source>
+        <translation>Belum ada instance yang dipilih</translation>
     </message>
 </context>
 <context>
@@ -800,6 +840,10 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <source>No address yet</source>
         <translation>Belum ada alamat</translation>
     </message>
+    <message>
+        <source>Online · %1/%2</source>
+        <translation>Online · %1/%2</translation>
+    </message>
 </context>
 <context>
     <name>KubikServerPage</name>
@@ -907,6 +951,54 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <source>Mods</source>
         <translation>Mods</translation>
     </message>
+    <message>
+        <source>How you join %1</source>
+        <translation>Cara join ke %1</translation>
+    </message>
+    <message>
+        <source>How joining works</source>
+        <translation>Cara join ke server</translation>
+    </message>
+    <message>
+        <source>1.  Minecraft opens and connects to %1 by itself.</source>
+        <translation>1.  Minecraft kebuka dan langsung nyambung ke %1 sendiri.</translation>
+    </message>
+    <message>
+        <source>2.  If you leave or get disconnected, open Multiplayer. %1 is at the top of the list.</source>
+        <translation>2.  Kalau kamu keluar atau koneksinya putus, buka Multiplayer. %1 ada di paling atas daftar.</translation>
+    </message>
+    <message>
+        <source>3.  Joining from another launcher? Use the address %1 with %2 and the mods listed below.</source>
+        <translation>3.  Mau join dari launcher lain? Pakai alamat %1 dengan %2 dan mods di bawah ini.</translation>
+    </message>
+    <message>
+        <source>3.  Joining from another launcher? Use the address %1 with %2.</source>
+        <translation>3.  Mau join dari launcher lain? Pakai alamat %1 dengan %2.</translation>
+    </message>
+    <message>
+        <source>Playing as %1, an offline profile. It can only join servers whose owner turned on offline access.</source>
+        <translation>Kamu main sebagai %1, profil offline. Profil ini cuma bisa join ke server yang pemiliknya udah nyalain akses offline.</translation>
+    </message>
+    <message>
+        <source>Add your Minecraft account to play. Joining a server needs the Microsoft account you bought Minecraft with.</source>
+        <translation>Tambah akun Minecraft kamu buat main. Join ke server butuh akun Microsoft yang kamu pakai buat beli Minecraft.</translation>
+    </message>
+    <message>
+        <source>Sign in with Microsoft</source>
+        <translation>Masuk dengan Microsoft</translation>
+    </message>
+    <message>
+        <source>In game</source>
+        <translation>Lagi main</translation>
+    </message>
+    <message>
+        <source>How to join</source>
+        <translation>Cara join</translation>
+    </message>
+    <message>
+        <source>Got it</source>
+        <translation>Oke, paham</translation>
+    </message>
 </context>
 <context>
     <name>KubikSignInPage</name>
@@ -994,6 +1086,407 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
     <message>
         <source>KubikLauncher could not record the mods it installed in %1.</source>
         <translation>KubikLauncher nggak bisa nyatet mods yang dipasang di %1.</translation>
+    </message>
+</context>
+<context>
+    <name>KubikAccounts</name>
+    <message>
+        <source>Choose a name for this offline profile. It&apos;s the name other players see in game.</source>
+        <translation>Pilih nama buat profil offline ini. Nama ini yang dilihat pemain lain di dalam game.</translation>
+    </message>
+    <message>
+        <source>Add offline profile</source>
+        <translation>Tambah profil offline</translation>
+    </message>
+    <message>
+        <source>Offline profile</source>
+        <translation>Profil offline</translation>
+    </message>
+    <message>
+        <source>Microsoft account</source>
+        <translation>Akun Microsoft</translation>
+    </message>
+</context>
+<context>
+    <name>KubikProfileCard</name>
+    <message>
+        <source>Playing as %1 (%2).</source>
+        <translation>Main sebagai %1 (%2).</translation>
+    </message>
+    <message>
+        <source>Signed in to kubik.gg as %1.</source>
+        <translation>Masuk ke kubik.gg sebagai %1.</translation>
+    </message>
+    <message>
+        <source>Add Minecraft account</source>
+        <translation>Tambah akun Minecraft</translation>
+    </message>
+    <message>
+        <source>Not signed in</source>
+        <translation>Belum masuk</translation>
+    </message>
+    <message>
+        <source>Sign in again</source>
+        <translation>Masuk lagi</translation>
+    </message>
+    <message>
+        <source>Offline · kubik.gg</source>
+        <translation>Offline · kubik.gg</translation>
+    </message>
+    <message>
+        <source>Microsoft · kubik.gg</source>
+        <translation>Microsoft · kubik.gg</translation>
+    </message>
+    <message>
+        <source>Minecraft</source>
+        <translation>Minecraft</translation>
+    </message>
+    <message>
+        <source>%1 · in use</source>
+        <translation>%1 · dipakai</translation>
+    </message>
+    <message>
+        <source>Add Microsoft account</source>
+        <translation>Tambah akun Microsoft</translation>
+    </message>
+    <message>
+        <source>Add offline profile</source>
+        <translation>Tambah profil offline</translation>
+    </message>
+    <message>
+        <source>Add a Microsoft account that owns Minecraft first.</source>
+        <translation>Tambah akun Microsoft yang punya Minecraft dulu.</translation>
+    </message>
+    <message>
+        <source>Manage profiles…</source>
+        <translation>Atur profil…</translation>
+    </message>
+    <message>
+        <source>kubik.gg</source>
+        <translation>kubik.gg</translation>
+    </message>
+    <message>
+        <source>%1	%2</source>
+        <translation>%1	%2</translation>
+    </message>
+    <message>
+        <source>Open kubik.gg</source>
+        <translation>Buka kubik.gg</translation>
+    </message>
+    <message>
+        <source>Sign out of kubik.gg</source>
+        <translation>Keluar dari kubik.gg</translation>
+    </message>
+</context>
+<context>
+    <name>KubikProfilesPage</name>
+    <message>
+        <source>Sign out of kubik.gg?</source>
+        <translation>Keluar dari kubik.gg?</translation>
+    </message>
+    <message>
+        <source>KubikLauncher stops showing your servers until you sign in again. Your instances and Minecraft profiles stay.</source>
+        <translation>KubikLauncher berhenti nampilin server kamu sampai kamu masuk lagi. Instance dan profil Minecraft kamu tetap ada.</translation>
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation>Keluar</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Batal</translation>
+    </message>
+    <message>
+        <source>Profiles</source>
+        <translation>Profil</translation>
+    </message>
+    <message>
+        <source>Minecraft profiles</source>
+        <translation>Profil Minecraft</translation>
+    </message>
+    <message>
+        <source>The profile in use is the one that joins servers. Switch it here or from the card at the bottom of the sidebar.</source>
+        <translation>Profil yang dipakai itu yang join ke server. Ganti di sini atau dari kartu di bawah sidebar.</translation>
+    </message>
+    <message>
+        <source>Add Microsoft account</source>
+        <translation>Tambah akun Microsoft</translation>
+    </message>
+    <message>
+        <source>Add offline profile</source>
+        <translation>Tambah profil offline</translation>
+    </message>
+    <message>
+        <source>Offline profiles can only join servers whose owner turned on offline access.</source>
+        <translation>Profil offline cuma bisa join ke server yang pemiliknya udah nyalain akses offline.</translation>
+    </message>
+    <message>
+        <source>Offline profiles unlock once you add a Microsoft account that owns Minecraft.</source>
+        <translation>Profil offline kebuka setelah kamu nambahin akun Microsoft yang punya Minecraft.</translation>
+    </message>
+    <message>
+        <source>kubik.gg account</source>
+        <translation>Akun kubik.gg</translation>
+    </message>
+    <message>
+        <source>Signed in as %1</source>
+        <translation>Masuk sebagai %1</translation>
+    </message>
+    <message>
+        <source>Signed in as %1 (%2)</source>
+        <translation>Masuk sebagai %1 (%2)</translation>
+    </message>
+    <message>
+        <source>No Minecraft profile yet. Add the Microsoft account you bought Minecraft with to join servers.</source>
+        <translation>Belum ada profil Minecraft. Tambah akun Microsoft yang kamu pakai buat beli Minecraft biar bisa join ke server.</translation>
+    </message>
+    <message>
+        <source>%1 · sign in again</source>
+        <translation>%1 · masuk lagi</translation>
+    </message>
+    <message>
+        <source>%1 · in use</source>
+        <translation>%1 · dipakai</translation>
+    </message>
+    <message>
+        <source>Sign in again</source>
+        <translation>Masuk lagi</translation>
+    </message>
+    <message>
+        <source>Use</source>
+        <translation>Pakai</translation>
+    </message>
+    <message>
+        <source>Skin…</source>
+        <translation>Skin…</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Hapus</translation>
+    </message>
+    <message>
+        <source>Remove %1?</source>
+        <translation>Hapus %1?</translation>
+    </message>
+    <message>
+        <source>KubikLauncher forgets this profile. Your Minecraft account itself is not touched, and you can add it again any time.</source>
+        <translation>KubikLauncher bakal ngelupain profil ini. Akun Minecraft kamu sendiri nggak diapa-apain, dan bisa kamu tambahin lagi kapan aja.</translation>
+    </message>
+</context>
+<context>
+    <name>KubikSettingsDialog</name>
+    <message>
+        <source>%1 GB</source>
+        <translation>%1 GB</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Pengaturan</translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation>Umum</translation>
+    </message>
+    <message>
+        <source>Game</source>
+        <translation>Game</translation>
+    </message>
+    <message>
+        <source>Java</source>
+        <translation>Java</translation>
+    </message>
+    <message>
+        <source>Profiles</source>
+        <translation>Profil</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Selesai</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Bahasa</translation>
+    </message>
+    <message>
+        <source>Updates</source>
+        <translation>Update</translation>
+    </message>
+    <message>
+        <source>Check for KubikLauncher updates automatically</source>
+        <translation>Cek update KubikLauncher otomatis</translation>
+    </message>
+    <message>
+        <source>Files</source>
+        <translation>File</translation>
+    </message>
+    <message>
+        <source>Your instances, worlds, screenshots and logs live in KubikLauncher&apos;s folder.</source>
+        <translation>Instance, world, screenshot, dan log kamu ada di folder KubikLauncher.</translation>
+    </message>
+    <message>
+        <source>Open KubikLauncher&apos;s folder</source>
+        <translation>Buka folder KubikLauncher</translation>
+    </message>
+    <message>
+        <source>Game window</source>
+        <translation>Jendela game</translation>
+    </message>
+    <message>
+        <source>Start Minecraft maximised</source>
+        <translation>Buka Minecraft dengan jendela penuh</translation>
+    </message>
+    <message>
+        <source>Window size</source>
+        <translation>Ukuran jendela</translation>
+    </message>
+    <message>
+        <source>While you play</source>
+        <translation>Selama kamu main</translation>
+    </message>
+    <message>
+        <source>Hide KubikLauncher while Minecraft is open</source>
+        <translation>Sembunyiin KubikLauncher selama Minecraft kebuka</translation>
+    </message>
+    <message>
+        <source>It comes back by itself when you close the game.</source>
+        <translation>Nanti muncul lagi sendiri waktu kamu nutup game.</translation>
+    </message>
+    <message>
+        <source>Pick and download the right Java by itself (recommended)</source>
+        <translation>Pilih dan download Java yang pas secara otomatis (disarankan)</translation>
+    </message>
+    <message>
+        <source>Pick the right Java by itself (recommended)</source>
+        <translation>Pilih Java yang pas secara otomatis (disarankan)</translation>
+    </message>
+    <message>
+        <source>Each Minecraft version needs its own Java. KubikLauncher gets it the first time you play.</source>
+        <translation>Tiap versi Minecraft butuh Java-nya sendiri. KubikLauncher ngambilin pas pertama kali kamu main.</translation>
+    </message>
+    <message>
+        <source>Each Minecraft version needs its own Java. KubikLauncher picks it from the ones installed.</source>
+        <translation>Tiap versi Minecraft butuh Java-nya sendiri. KubikLauncher milih dari yang udah terpasang.</translation>
+    </message>
+    <message>
+        <source>Path to the java executable</source>
+        <translation>Lokasi file java</translation>
+    </message>
+    <message>
+        <source>Find installed</source>
+        <translation>Cari yang terpasang</translation>
+    </message>
+    <message>
+        <source>Browse</source>
+        <translation>Pilih file</translation>
+    </message>
+    <message>
+        <source>Test</source>
+        <translation>Tes</translation>
+    </message>
+    <message>
+        <source>Choose a Java installation</source>
+        <translation>Pilih instalasi Java</translation>
+    </message>
+    <message>
+        <source>Find the java executable</source>
+        <translation>Cari file java</translation>
+    </message>
+    <message>
+        <source>Memory</source>
+        <translation>Memori</translation>
+    </message>
+    <message>
+        <source>Java arguments</source>
+        <translation>Argumen Java</translation>
+    </message>
+    <message>
+        <source>Show Java arguments</source>
+        <translation>Tampilkan argumen Java</translation>
+    </message>
+    <message>
+        <source>Leave this empty unless you know you need it.</source>
+        <translation>Kosongin aja kecuali kamu tahu butuh ini.</translation>
+    </message>
+    <message>
+        <source>The most memory Minecraft may use. Recommended for this computer: %1.</source>
+        <translation>Memori maksimal yang boleh dipakai Minecraft. Saran buat komputer ini: %1.</translation>
+    </message>
+    <message>
+        <source>That is all of this computer&apos;s memory. Minecraft would leave nothing for everything else, so lower it.</source>
+        <translation>Itu semua memori komputer ini. Minecraft nggak bakal nyisain buat yang lain, jadi turunin ya.</translation>
+    </message>
+    <message>
+        <source>That is close to all of this computer&apos;s memory. If the computer slows down while you play, lower it.</source>
+        <translation>Itu hampir semua memori komputer ini. Kalau komputer jadi lambat waktu main, turunin.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguageWizardPage</name>
+    <message>
+        <source>Choose your language</source>
+        <translation>Pilih bahasa kamu</translation>
+    </message>
+    <message>
+        <source>Everything in KubikLauncher follows it. You can change it later in Settings.</source>
+        <translation>Semua di KubikLauncher ikut bahasa ini. Bisa kamu ganti nanti di Pengaturan.</translation>
+    </message>
+</context>
+<context>
+    <name>LoginWizardPage</name>
+    <message>
+        <source>Connect your Minecraft account</source>
+        <translation>Sambungin akun Minecraft kamu</translation>
+    </message>
+    <message>
+        <source>Minecraft needs the Microsoft account you bought it with to join servers. You sign in on Microsoft&apos;s own page, so KubikLauncher never sees your password.</source>
+        <translation>Minecraft butuh akun Microsoft yang kamu pakai buat beli game-nya biar bisa join ke server. Kamu masuk di halaman Microsoft sendiri, jadi KubikLauncher nggak pernah lihat password kamu.</translation>
+    </message>
+    <message>
+        <source>You stay signed in. More accounts, or an offline profile, can be added later from your profile card.</source>
+        <translation>Kamu tetap masuk. Akun lain atau profil offline bisa ditambahin nanti dari kartu profil kamu.</translation>
+    </message>
+    <message>
+        <source>Sign in with Microsoft</source>
+        <translation>Masuk dengan Microsoft</translation>
+    </message>
+    <message>
+        <source>Skip for now</source>
+        <translation>Lewati dulu</translation>
+    </message>
+    <message>
+        <source>Skip signing in?</source>
+        <translation>Lewati login?</translation>
+    </message>
+    <message>
+        <source>You can browse your servers and install what they need, but you can&apos;t join one until you add a Microsoft account. You can add one any time from your profile card.</source>
+        <translation>Kamu bisa lihat server kamu dan masang yang dibutuhin, tapi belum bisa join sampai kamu nambahin akun Microsoft. Bisa ditambahin kapan aja dari kartu profil kamu.</translation>
+    </message>
+    <message>
+        <source>Sign in now</source>
+        <translation>Masuk sekarang</translation>
+    </message>
+    <message>
+        <source>Skip anyway</source>
+        <translation>Tetap lewati</translation>
+    </message>
+</context>
+<context>
+    <name>SetupWizard</name>
+    <message>
+        <source>Step %1 of %2</source>
+        <translation>Langkah %1 dari %2</translation>
+    </message>
+    <message>
+        <source>Continue</source>
+        <translation>Lanjut</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Kembali</translation>
+    </message>
+    <message>
+        <source>Set up %1</source>
+        <translation>Siapin %1</translation>
     </message>
 </context>
 </TS>

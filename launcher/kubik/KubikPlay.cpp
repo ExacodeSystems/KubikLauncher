@@ -31,6 +31,7 @@
 #include "kubik/KubikProfiles.h"
 #include "kubik/KubikSyncTask.h"
 #include "minecraft/MinecraftInstance.h"
+#include "minecraft/auth/AccountList.h"
 #include "minecraft/launch/MinecraftTarget.h"
 
 namespace {
@@ -327,10 +328,18 @@ void KubikPlay::launchIfReady()
     if (!m_synced || !m_serverUp || !m_instance) {
         return;
     }
+    // Asked here rather than by LaunchController, whose answer is a Yes/No box: everything is installed and
+    // synced by now, so adding an account on the server page and pressing Play again goes straight in.
+    if (!APPLICATION->accounts()->anyAccountIsValid()) {
+        m_over = true;
+        emit accountNeeded();
+        return;
+    }
     setStage(Stage::Launching, tr("Starting Minecraft…"));
     m_over = true;
     const auto target = std::make_shared<MinecraftTarget>(MinecraftTarget::parse(m_pack->address, false));
     if (APPLICATION->launch(m_instance, LaunchMode::Normal, target)) {
+        Kubik::recordLaunch(m_server.id, m_instance);
         emit launched(m_instance->id());
     } else {
         emit failed(tr("Minecraft could not be started from %1.").arg(m_instance->name()));

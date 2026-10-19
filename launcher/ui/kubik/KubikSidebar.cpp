@@ -27,13 +27,9 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include <QDesktopServices>
-#include <QUrl>
-
 #include "Application.h"
-#include "kubik/KubikAccount.h"
-#include "kubik/KubikApi.h"
 #include "kubik/KubikWindowChrome.h"
+#include "ui/kubik/KubikProfileCard.h"
 
 namespace {
 
@@ -84,33 +80,25 @@ KubikSidebar::KubikSidebar(QWidget* parent) : QFrame(parent), m_pages(new QButto
 
     layout->addStretch();
 
-    // The kubik.gg account: whose servers these are. Its menu is the rail's own.
-    m_kubik = railButton(QString(), this);
-    m_kubik->setObjectName("kubikAccountChip");
-    m_kubik->setIcon(APPLICATION->logo());
-    m_kubik->setIconSize(QSize(24, 24));
-    m_kubikMenu = new QMenu(this);
-    layout->addWidget(m_kubik);
-    connect(KubikAccount::get(), &KubikAccount::changed, this, &KubikSidebar::updateKubikAccount);
-
-    m_account = railButton("noaccount", this);
-    m_account->setObjectName("kubikAccountChip");
-    m_account->setIconSize(QSize(24, 24));
     m_settings = railButton("settings", this);
     m_more = railButton("help", this);
-    layout->addWidget(m_account);
     layout->addWidget(m_settings);
     layout->addWidget(m_more);
     connect(m_settings, &QPushButton::clicked, this, &KubikSidebar::settingsRequested);
-    // The two menus open beside the rail, level with the row that opened them.
-    const auto popUp = [](QPushButton* button, QMenu* menu) {
-        if (menu) {
-            menu->popup(button->mapToGlobal(QPoint(button->width() + 6, 0)));
+    // "Help & more" opens beside the rail, level with its row.
+    connect(m_more, &QPushButton::clicked, this, [this] {
+        if (m_moreMenu) {
+            m_moreMenu->popup(m_more->mapToGlobal(QPoint(m_more->width() + 6, 0)));
         }
-    };
-    connect(m_kubik, &QPushButton::clicked, this, [this, popUp] { popUp(m_kubik, m_kubikMenu); });
-    connect(m_account, &QPushButton::clicked, this, [this, popUp] { popUp(m_account, m_accountMenu); });
-    connect(m_more, &QPushButton::clicked, this, [this, popUp] { popUp(m_more, m_moreMenu); });
+    });
+
+    // Who plays, on a card of its own under everything else, so it reads as an account and not a page.
+    m_profile = new KubikProfileCard(this);
+    auto* profileRow = new QHBoxLayout();
+    profileRow->setContentsMargins(12, 10, 12, 0);
+    profileRow->addWidget(m_profile);
+    layout->addLayout(profileRow);
+    connect(m_profile, &KubikProfileCard::manageRequested, this, &KubikSidebar::profilesRequested);
 
     retranslate();
 }
@@ -123,44 +111,15 @@ void KubikSidebar::setCurrentPage(Page page)
     emit pageRequested(page);
 }
 
-void KubikSidebar::setAccount(const QIcon& face, const QString& name)
-{
-    m_accountName = name;
-    m_account->setIcon(face.isNull() ? QIcon::fromTheme("noaccount") : face);
-    retranslate();
-}
-
-void KubikSidebar::setAccountMenu(QMenu* menu)
-{
-    m_accountMenu = menu;
-}
-
 void KubikSidebar::setMoreMenu(QMenu* menu)
 {
     m_moreMenu = menu;
-}
-
-void KubikSidebar::updateKubikAccount()
-{
-    const auto& user = KubikAccount::get()->user();
-    m_kubik->setText(user.name.isEmpty() ? user.email : user.name);
-    m_kubik->setToolTip(tr("Signed in to kubik.gg as %1").arg(user.email));
-
-    m_kubikMenu->clear();
-    auto* who = m_kubikMenu->addAction(user.email);
-    who->setEnabled(false);
-    m_kubikMenu->addSeparator();
-    m_kubikMenu->addAction(tr("Open kubik.gg"), this, [] { QDesktopServices::openUrl(QUrl(Kubik::webOrigin() + "/dashboard")); });
-    m_kubikMenu->addAction(tr("Sign out of kubik.gg"), this, [] { KubikAccount::get()->signOut(); });
 }
 
 void KubikSidebar::retranslate()
 {
     m_servers->setText(tr("Servers"));
     m_instances->setText(tr("Instances"));
-    updateKubikAccount();
-    m_account->setText(m_accountName.isEmpty() ? tr("Add Microsoft account") : m_accountName);
-    m_account->setToolTip(tr("Switch or manage your Microsoft accounts"));
     m_settings->setText(tr("Settings"));
     // "&&": a lone "&" in a button's text marks a keyboard mnemonic and is not shown.
     m_more->setText(tr("Help && more"));

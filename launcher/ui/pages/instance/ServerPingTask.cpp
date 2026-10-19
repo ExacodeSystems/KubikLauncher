@@ -32,6 +32,12 @@ void ServerPingTask::executeTask()
 
         connect(client, &McClient::succeeded, this, [this](QJsonObject data) {
             m_outputOnlinePlayers = getOnlinePlayers(data);
+            m_outputMaxPlayers = data.value("players").toObject().value("max").toInt(-1);
+            // "data:image/png;base64,…", the 64x64 server-icon.png a server may send.
+            const QString favicon = data.value("favicon").toString();
+            if (const auto comma = favicon.indexOf(','); favicon.startsWith("data:image/png;base64,") && comma > 0) {
+                m_outputFavicon = QByteArray::fromBase64(favicon.mid(comma + 1).toLatin1());
+            }
             qDebug() << "Online players:" << m_outputOnlinePlayers;
             emitSucceeded();
         });

@@ -346,6 +346,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         m_pages->addWidget(m_signIn);        // the whole window until kubik.gg sign-in
         connect(m_sidebar, &KubikSidebar::pageRequested, m_pages, &QStackedWidget::setCurrentIndex);
         connect(m_sidebar, &KubikSidebar::settingsRequested, this, [this] { APPLICATION->ShowGlobalSettings(this); });
+        connect(m_sidebar, &KubikSidebar::profilesRequested, this, [this] { APPLICATION->ShowGlobalSettings(this, "accounts"); });
 
         connect(m_servers, &KubikServersPage::serverOpened, this, [this](const QString& id) { showServerPage(id); });
         connect(m_servers, &KubikServersPage::playRequested, this, [this](const QString& id) { showServerPage(id, true); });
@@ -505,7 +506,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         more->addAction(ui->actionAbout);
         m_sidebar->setMoreMenu(more);
     }
-    m_sidebar->setAccountMenu(ui->actionAccountsButton->menu());
     defaultAccountChanged();
     updateKubikGate();
     KubikWindowChrome::ignoreSafeArea(this);
@@ -843,18 +843,12 @@ void MainWindow::defaultAccountChanged()
         } else {
             ui->actionAccountsButton->setIcon(face);
         }
-        if (m_sidebar) {
-            m_sidebar->setAccount(face.isNull() ? QIcon() : QIcon(face), account->displayName());
-        }
         return;
     }
 
     // Set the icon to the "no account" icon.
     ui->actionAccountsButton->setIcon(QIcon::fromTheme("noaccount"));
     ui->actionAccountsButton->setText(tr("Accounts"));
-    if (m_sidebar) {
-        m_sidebar->setAccount(QIcon(), QString());
-    }
 }
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* ev)

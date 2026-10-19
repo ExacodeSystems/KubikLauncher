@@ -310,6 +310,8 @@ set(MINECRAFT_SOURCES
     minecraft/VersionFilterData.cpp
     minecraft/World.h
     minecraft/World.cpp
+    minecraft/ServersDat.h
+    minecraft/ServersDat.cpp
     minecraft/WorldList.h
     minecraft/WorldList.cpp
     minecraft/WorldTasks.h
@@ -882,6 +884,8 @@ SET(LAUNCHER_SOURCES
     kubik/KubikAccount.h
     kubik/KubikApi.cpp
     kubik/KubikApi.h
+    kubik/KubikGameFiles.cpp
+    kubik/KubikGameFiles.h
     kubik/KubikInstanceTask.cpp
     kubik/KubikInstanceTask.h
     kubik/KubikModels.cpp
@@ -897,6 +901,10 @@ SET(LAUNCHER_SOURCES
     kubik/KubikSnapshot.cpp
     kubik/KubikSnapshot.h
     kubik/KubikWindowChrome.h
+    ui/kubik/KubikAccounts.cpp
+    ui/kubik/KubikAccounts.h
+    ui/kubik/KubikConfirmDialog.cpp
+    ui/kubik/KubikConfirmDialog.h
     ui/kubik/KubikHomePage.cpp
     ui/kubik/KubikHomePage.h
     ui/kubik/KubikInstanceDelegate.cpp
@@ -907,12 +915,20 @@ SET(LAUNCHER_SOURCES
     ui/kubik/KubikInstancePage.h
     ui/kubik/KubikInstancePicker.cpp
     ui/kubik/KubikInstancePicker.h
+    ui/kubik/KubikLanguagePicker.cpp
+    ui/kubik/KubikLanguagePicker.h
+    ui/kubik/KubikProfileCard.cpp
+    ui/kubik/KubikProfileCard.h
+    ui/kubik/KubikProfilesPage.cpp
+    ui/kubik/KubikProfilesPage.h
     ui/kubik/KubikServerPage.cpp
     ui/kubik/KubikServerPage.h
     ui/kubik/KubikServerTiles.cpp
     ui/kubik/KubikServerTiles.h
     ui/kubik/KubikServersPage.cpp
     ui/kubik/KubikServersPage.h
+    ui/kubik/KubikSettingsDialog.cpp
+    ui/kubik/KubikSettingsDialog.h
     ui/kubik/KubikSidebar.cpp
     ui/kubik/KubikSidebar.h
     ui/kubik/KubikSignInPage.cpp

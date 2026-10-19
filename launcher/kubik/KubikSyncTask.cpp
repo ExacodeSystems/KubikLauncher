@@ -18,8 +18,10 @@
 
 #include "KubikSyncTask.h"
 
+#include <QBuffer>
 #include <QCryptographicHash>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QSaveFile>
@@ -28,7 +30,11 @@
 
 #include "Application.h"
 #include "FileSystem.h"
+#include "kubik/KubikGameFiles.h"
 #include "minecraft/MinecraftInstance.h"
+#include "minecraft/ServersDat.h"
+
+#include <tag_compound.h>
 #include "minecraft/PackProfile.h"
 #include "modplatform/packwiz/Packwiz.h"
 #include "net/ChecksumValidator.h"
@@ -220,6 +226,8 @@ void KubikSyncTask::apply()
         }
     }
 
+    applyGameFiles(m_plan.next);
+
     QSaveFile sidecar(sidecarPath(m_instance));
     FS::ensureFilePathExists(sidecar.fileName());
     if (!sidecar.open(QIODevice::WriteOnly) || sidecar.write(Kubik::writeManagedState(m_plan.next)) < 0 || !sidecar.commit()) {
@@ -247,5 +255,79 @@ void KubikSyncTask::raiseLoaderBuild()
     if (installed.isEmpty() || Kubik::compareBuilds(installed, m_pack.loaderBuild) < 0) {
         components->setComponentVersion(uid, m_pack.loaderBuild);
         components->saveNow();
+    }
+}
+
+namespace {
+
+/** The Multiplayer list's icon for a server KubikLauncher adds: the Kubik mark, exactly 64x64 as Minecraft requires. */
+QByteArray serverIcon()
+{
+    const QImage image = APPLICATION->logo().pixmap(QSize(64, 64), 1.0).toImage().scaled(64, 64);
+    QByteArray png;
+    QBuffer buffer(&png);
+    buffer.open(QIODevice::WriteOnly);
+    image.save(&buffer, "PNG");
+    return png;
+}
+
+bool writeFile(const QString& path, const QByteArray& bytes)
+{
+    QSaveFile file(path);
+    return FS::ensureFilePathExists(path) && file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
+}
+
+}  // namespace
+
+void KubikSyncTask::applyGameFiles(Kubik::ManagedState& next)
+{
+    const QString gameRoot = m_instance->gameRoot();
+    QString minecraft = m_pack.minecraft;
+    if (minecraft.isEmpty()) {
+        minecraft = m_instance->getPackProfile()->getComponentVersion("net.minecraft");
+    }
+
+    // The server goes first in Multiplayer, for a rejoin after leaving or a disconnect.
+    if (!m_pack.address.isEmpty()) {
+        const QString path = FS::PathCombine(gameRoot, "servers.dat");
+        // A list that is there but cannot be read is the player's and is left alone, never replaced.
+        auto root = QFileInfo::exists(path) ? ServersDat::read(path) : std::make_unique<nbt::tag_compound>();
+        if (!root) {
+            qWarning() << "KubikSyncTask: servers.dat cannot be read; the server is not added to it" << path;
+        } else {
+            const bool ours = Kubik::upsertServerEntry(*root, { m_pack.serverName, m_pack.address, serverIcon() }, next.serverEntry);
+            if (ServersDat::write(path, *root)) {
+                next.serverEntry = ours ? m_pack.address : QString();
+            } else {
+                qWarning() << "KubikSyncTask: servers.dat could not be written" << path;
+            }
+        }
+    }
+
+    // The Kubik resource pack: copied every time (a few small files, and an updated launcher ships an
+    // updated pack), with a pack.mcmeta for this instance's Minecraft version.
+    const QDir pack(FS::PathCombine(m_instance->resourcePacksDir(), "Kubik"));
+    const QString bundled = QStringLiteral(":/kubik/resourcepack");
+    for (QDirIterator it(bundled, QDir::Files, QDirIterator::Subdirectories); it.hasNext();) {
+        const QString source = it.next();
+        const QString target = pack.filePath(QDir(bundled).relativeFilePath(source));
+        QFile in(source);
+        if (!in.open(QIODevice::ReadOnly) || !writeFile(target, in.readAll())) {
+            qWarning() << "KubikSyncTask: could not place" << target;
+        }
+    }
+    writeFile(pack.filePath("pack.mcmeta"), Kubik::packMcmeta(minecraft, QStringLiteral("Kubik · kubik.gg")));
+
+    // Switched on once. A player who turns it off in Resource Packs keeps it off.
+    if (!next.lookApplied) {
+        const QString path = FS::PathCombine(gameRoot, "options.txt");
+        QString text;
+        if (QFile file(path); file.open(QIODevice::ReadOnly)) {
+            text = QString::fromUtf8(file.readAll());
+        }
+        const QString edited = Kubik::enableResourcePack(text, Kubik::resourcePackEntry(minecraft, "Kubik"));
+        if (edited == text || writeFile(path, edited.toUtf8())) {
+            next.lookApplied = true;
+        }
     }
 }

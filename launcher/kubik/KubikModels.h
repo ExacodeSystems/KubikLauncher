@@ -22,6 +22,7 @@
 #include <QList>
 #include <QString>
 
+#include <functional>
 #include <optional>
 
 /**
@@ -150,5 +151,11 @@ QString loaderComponentUid(const QString& loader);
 /** RFC 7636: a fresh verifier (43 base64url characters), and its S256 challenge. */
 QString makePkceVerifier();
 QString pkceChallenge(const QString& verifier);
+
+/**
+ * Home's order: servers that are up first (they can be joined now), then the ones played most recently,
+ * then by name. `lastPlayedMs` answers 0 for a server never played from this launcher.
+ */
+void sortForHome(QList<Server>& servers, const std::function<qint64(const QString&)>& lastPlayedMs);
 
 }  // namespace Kubik

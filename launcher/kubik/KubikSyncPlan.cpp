@@ -30,6 +30,9 @@ SyncPlan planSync(const ManagedState& current, const Pack& pack, const QList<Loc
     SyncPlan plan;
     plan.next.serverId = pack.serverId;
     plan.next.revision = pack.revision;
+    // Not about mods: carried over for KubikSyncTask's game files step, which updates them.
+    plan.next.serverEntry = current.serverEntry;
+    plan.next.lookApplied = current.lookApplied;
 
     QHash<QString, QString> placedSha;  // filename -> sha512, what sync owns now
     for (const auto& file : current.placed) {
@@ -156,6 +159,8 @@ QByteArray writeManagedState(const ManagedState& state)
         { "revision", state.revision },
         { "placed", placed },
         { "displaced", QJsonArray::fromStringList(state.displaced) },
+        { "serverEntry", state.serverEntry },
+        { "lookApplied", state.lookApplied },
     };
     return QJsonDocument(root).toJson(QJsonDocument::Indented);
 }
@@ -171,6 +176,8 @@ std::optional<ManagedState> readManagedState(const QByteArray& json)
     ManagedState state;
     state.serverId = root.value("serverId").toString();
     state.revision = root.value("revision").toString();
+    state.serverEntry = root.value("serverEntry").toString();
+    state.lookApplied = root.value("lookApplied").toBool();
     for (const auto& v : root.value("placed").toArray()) {
         const auto o = v.toObject();
         const auto name = o.value("filename").toString();

@@ -18,15 +18,19 @@
 
 #pragma once
 
+#include <QIcon>
+#include <QMetaObject>
 #include <QPointer>
 #include <QWidget>
 
+#include <functional>
 #include <optional>
 
 #include "kubik/KubikModels.h"
 
 class BaseInstance;
 class KubikPlay;
+class QFrame;
 class QLabel;
 class QProgressBar;
 class QPushButton;
@@ -40,7 +44,11 @@ class QVBoxLayout;
  * becomes Cancel, the line under it says what is happening ("Installing Fabric
  * 1.21.1…", "Downloading 4 mods…", "Waiting for the server to wake up"), and
  * anything that stops it is said in the same place, with the one button that
- * fixes it where there is one (pay the invoice, open the dashboard).
+ * fixes it where there is one (pay the invoice, add a Minecraft account).
+ *
+ * While the game it launched runs, Play reads "In game" and a short card says
+ * how the join works: Minecraft connects by itself, and the server is at the top
+ * of Multiplayer for a rejoin.
  */
 class KubikServerPage : public QWidget {
     Q_OBJECT
@@ -68,6 +76,14 @@ class KubikServerPage : public QWidget {
     void updateInstanceLine();
     void updatePlayState();
     void showNotice(const QString& message, const QString& actionLabel = {}, const QString& actionUrl = {});
+    void showNotice(const QString& message, const QString& actionLabel, std::function<void()> action, const QIcon& icon = {});
+    void askForAccount();
+    /** The instance this server plays in: the remembered one, or the only one that fits. */
+    BaseInstance* currentInstance() const;
+    bool inGame() const;
+    void watchInstance();
+    void updateJoinCard();
+    void updateAccountNote();
     void chooseInstance();
     void onPlayFinished();
 
@@ -89,9 +105,19 @@ class KubikServerPage : public QWidget {
     QLabel* m_progressText;
     QProgressBar* m_progress;
 
+    QLabel* m_accountNote;
+
     QLabel* m_notice;
     QPushButton* m_noticeAction;
-    QString m_noticeUrl;
+    std::function<void()> m_noticeCallback;
+
+    QPushButton* m_howToJoin;
+    QFrame* m_joinCard;
+    QLabel* m_joinTitle;
+    QLabel* m_joinSteps;
+    QPushButton* m_joinDismiss;
+    bool m_joinOpen = false;
+    QMetaObject::Connection m_runningWatch;
 
     QLabel* m_instanceTitle;
     QLabel* m_instanceLine;

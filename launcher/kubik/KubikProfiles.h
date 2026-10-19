@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <QDateTime>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -49,6 +50,15 @@ void rememberInstance(const QString& serverId, BaseInstance* instance);
 
 /** The ids of the servers that have played in this instance. */
 QStringList serversOf(BaseInstance* instance);
+
+/** When this server was last played from this launcher; invalid if never. */
+QDateTime lastPlayed(const QString& serverId);
+
+/** A launch: the server's last-played time, and which server the instance's game is now joined to. */
+void recordLaunch(const QString& serverId, BaseInstance* instance);
+
+/** The server the instance's game was launched for, while it runs; empty otherwise (this session only). */
+QString playingServer(BaseInstance* instance);
 
 /** The icon a new instance gets for its loader: Prism's own loader icons, or grass for vanilla. */
 QString iconForLoader(const QString& loader);

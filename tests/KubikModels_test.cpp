@@ -149,6 +149,29 @@ class KubikModelsTest : public QObject {
         QCOMPARE(loaderComponentUid("neoforge"), QString("net.neoforged"));
         QVERIFY(loaderComponentUid("").isEmpty());
     }
+
+    void sortsHomeUpFirstThenRecentThenByName()
+    {
+        const auto server = [](const QString& id, const QString& name, const QString& status) {
+            Server s;
+            s.id = id;
+            s.name = name;
+            s.status = status;
+            return s;
+        };
+        QList<Server> servers = {
+            server("1", "Zeta", "SUSPENDED"), server("2", "beta", "RUNNING"),  server("3", "Alpha", "RUNNING"),
+            server("4", "Gamma", "RUNNING"),  server("5", "Delta", "STOPPED"), server("6", "Eta", "SUSPENDED"),
+        };
+        // Gamma was played an hour ago, Zeta (asleep) a minute ago; the rest never.
+        const QHash<QString, qint64> played = { { "4", 1000 }, { "1", 5000 } };
+        sortForHome(servers, [&played](const QString& id) { return played.value(id, 0); });
+        QStringList order;
+        for (const auto& s : servers) {
+            order << s.name;
+        }
+        QCOMPARE(order, QStringList({ "Gamma", "Alpha", "beta", "Zeta", "Delta", "Eta" }));
+    }
 };
 
 QTEST_GUILESS_MAIN(KubikModelsTest)

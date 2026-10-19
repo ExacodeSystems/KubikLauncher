@@ -260,4 +260,19 @@ QString pkceChallenge(const QString& verifier)
     return QString::fromLatin1(digest.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals));
 }
 
+void sortForHome(QList<Server>& servers, const std::function<qint64(const QString&)>& lastPlayedMs)
+{
+    std::stable_sort(servers.begin(), servers.end(), [&lastPlayedMs](const Server& a, const Server& b) {
+        if (a.isRunning() != b.isRunning()) {
+            return a.isRunning();
+        }
+        const qint64 playedA = lastPlayedMs(a.id);
+        const qint64 playedB = lastPlayedMs(b.id);
+        if (playedA != playedB) {
+            return playedA > playedB;
+        }
+        return a.name.localeAwareCompare(b.name) < 0;
+    });
+}
+
 }  // namespace Kubik

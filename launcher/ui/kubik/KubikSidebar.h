@@ -20,6 +20,7 @@
 
 #include <QFrame>
 
+class KubikProfileCard;
 class QButtonGroup;
 class QLabel;
 class QMenu;
@@ -27,13 +28,12 @@ class QPushButton;
 
 /**
  * The main window's left rail: the Kubik mark, the pages, and at the bottom the
- * two accounts a player needs (kubik.gg, to see their servers; Microsoft, to
- * join them), Settings and "Help & more".
+ * profile card (who plays, and the kubik.gg account inside its menu), Settings
+ * and "Help & more".
  *
- * The rail owns no behaviour beyond navigation and the kubik.gg account's own
- * menu: MainWindow hands it the Microsoft account and help menus it already
- * builds, so switching accounts, opening folders or reading the logs work
- * exactly as they did on Prism's toolbars.
+ * The rail owns no behaviour beyond navigation and the profile card: MainWindow
+ * hands it the help menu it already builds, so opening folders or reading the
+ * logs work exactly as they did on Prism's toolbars.
  */
 class KubikSidebar : public QFrame {
     Q_OBJECT
@@ -45,31 +45,25 @@ class KubikSidebar : public QFrame {
     explicit KubikSidebar(QWidget* parent = nullptr);
 
     void setCurrentPage(Page page);
-    /** The account row: the signed-in player's face and name, opening `menu`. */
-    void setAccount(const QIcon& face, const QString& name);
-    void setAccountMenu(QMenu* menu);
     void setMoreMenu(QMenu* menu);
 
    signals:
     void pageRequested(int page);
     void settingsRequested();
+    /** The profile card's "Manage profiles…". */
+    void profilesRequested();
 
    protected:
     void changeEvent(QEvent* event) override;
 
    private:
     void retranslate();
-    void updateKubikAccount();
 
     QButtonGroup* m_pages;
     QPushButton* m_servers;
     QPushButton* m_instances;
-    QPushButton* m_kubik;
-    QMenu* m_kubikMenu;
-    QPushButton* m_account;
+    KubikProfileCard* m_profile;
     QPushButton* m_settings;
     QPushButton* m_more;
-    QMenu* m_accountMenu = nullptr;
     QMenu* m_moreMenu = nullptr;
-    QString m_accountName;
 };

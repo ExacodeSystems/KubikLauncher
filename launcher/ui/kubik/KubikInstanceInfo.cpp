@@ -133,7 +133,11 @@ QString KubikInstanceInfo::describe(const KubikInstanceSummary& summary)
 
 QString KubikInstanceInfo::lastPlayed(const BaseInstance* instance)
 {
-    const qint64 last = instance->lastLaunch();
+    return playedAgo(instance->lastLaunch());
+}
+
+QString KubikInstanceInfo::playedAgo(qint64 last)
+{
     if (last <= 0) {
         return tr("Never played");
     }

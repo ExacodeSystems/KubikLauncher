@@ -19,6 +19,8 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QHash>
+#include <QImage>
 #include <QListView>
 #include <QPersistentModelIndex>
 #include <QStyledItemDelegate>
@@ -32,6 +34,13 @@
  * tile so the two pages read as one product.
  */
 
+/** What a status ping of a running server said: who is on, and its icon. Unknown is -1 / null. */
+struct KubikServerLive {
+    int online = -1;
+    int max = -1;
+    QImage favicon;
+};
+
 class KubikServerModel : public QAbstractListModel {
     Q_OBJECT
 
@@ -39,6 +48,8 @@ class KubikServerModel : public QAbstractListModel {
     /** What the search box matches: name, address, loader and version. */
     static constexpr int SearchRole = Qt::UserRole + 1;
     static constexpr int IdRole = Qt::UserRole + 2;
+    /** A `const KubikServerLive*`, or null when the server has not answered a ping. */
+    static constexpr int LiveRole = Qt::UserRole + 3;
 
     using QAbstractListModel::QAbstractListModel;
 
@@ -46,12 +57,15 @@ class KubikServerModel : public QAbstractListModel {
     const QList<Kubik::Server>& servers() const { return m_servers; }
     const Kubik::Server* server(const QModelIndex& index) const;
     const Kubik::Server* serverById(const QString& id) const;
+    void setLive(const QString& id, const KubikServerLive& live);
+    const KubikServerLive* live(const QString& id) const;
 
     int rowCount(const QModelIndex& parent = {}) const override;
     QVariant data(const QModelIndex& index, int role) const override;
 
    private:
     QList<Kubik::Server> m_servers;
+    QHash<QString, KubikServerLive> m_live;
 };
 
 class KubikServerGrid : public QListView {
@@ -61,13 +75,17 @@ class KubikServerGrid : public QListView {
     explicit KubikServerGrid(QWidget* parent = nullptr);
     /** The width every tile gets: at least the minimum, stretched so a row is filled. */
     int tileWidth() const { return m_tileWidth; }
+    /** True while the keyboard (Tab) put the focus here: only then does the focused tile show a ring. */
+    bool keyboardFocus() const { return m_keyboardFocus && hasFocus(); }
 
    protected:
     void resizeEvent(QResizeEvent* event) override;
+    void focusInEvent(QFocusEvent* event) override;
 
    private:
     void relayout();
     int m_tileWidth = 0;
+    bool m_keyboardFocus = false;
 };
 
 class KubikServerDelegate : public QStyledItemDelegate {
@@ -88,9 +106,17 @@ class KubikServerDelegate : public QStyledItemDelegate {
     static QColor statusColour(const Kubik::Server& server);
     /** "Fabric 1.21.1 · 12 mods", or the modpack's name, or why it cannot be played here. */
     static QString describe(const Kubik::Server& server);
+    /** The status with what a ping adds: "Online · 3/20". */
+    static QString statusLine(const Kubik::Server& server, const KubikServerLive* live);
+    /**
+     * A server's picture: its own icon when a ping brought one, otherwise its loader's icon on a ground
+     * tinted per server, so a row of Fabric servers is not a row of identical tiles.
+     */
+    static void paintArt(QPainter* painter, const QRect& art, const Kubik::Server& server, const KubikServerLive* live, bool lit);
 
    private:
     QPersistentModelIndex m_hovered;
 };
 
 Q_DECLARE_METATYPE(const Kubik::Server*)
+Q_DECLARE_METATYPE(const KubikServerLive*)

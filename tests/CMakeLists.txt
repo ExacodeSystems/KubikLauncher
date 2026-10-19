@@ -75,3 +75,6 @@ ecm_add_test(KubikModels_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_M
 
 ecm_add_test(KubikSyncPlan_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
     TEST_NAME KubikSyncPlan)
+
+ecm_add_test(KubikGameFiles_test.cpp LINK_LIBRARIES Launcher_logic Qt${QT_VERSION_MAJOR}::Test
+    TEST_NAME KubikGameFiles)

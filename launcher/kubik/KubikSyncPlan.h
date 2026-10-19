@@ -58,6 +58,10 @@ struct ManagedState {
     QList<ManagedFile> placed;
     /** Player jars sync disabled because a server mod conflicted with them (enabled-form names). */
     QStringList displaced;
+    /** The Multiplayer entry KubikLauncher added to servers.dat (its address); empty when the player's own was used. */
+    QString serverEntry;
+    /** The Kubik resource pack was switched on in options.txt once; never again, so turning it off sticks. */
+    bool lookApplied = false;
 };
 
 /** A jar in the mods folder, by its enabled-form name. */

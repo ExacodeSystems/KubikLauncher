@@ -11,6 +11,9 @@ class ServerPingTask : public Task {
     explicit ServerPingTask(QString domain, int port) : Task(), m_domain(domain), m_port(port) {}
     ~ServerPingTask() override = default;
     int m_outputOnlinePlayers = -1;
+    // KubikLauncher's server tiles: the player limit, and the server's icon (PNG bytes; empty if it has none).
+    int m_outputMaxPlayers = -1;
+    QByteArray m_outputFavicon;
 
    private:
     QString m_domain;

@@ -101,6 +101,25 @@ QPushButton[kubikRole="quiet"]:hover {
     background-color: @void.panel@;
 }
 
+/* A button that is a sentence's link: "How to join", "Show Java arguments". Flush with the text
+   column (no padding), in the accent, and it lights up rather than filling. */
+QPushButton[kubikRole="link"] {
+    color: @grass@;
+    background-color: transparent;
+    padding: 4px 0;
+}
+
+QPushButton[kubikRole="link"]:hover {
+    color: @grass.mid@;
+    background-color: transparent;
+}
+
+QPushButton[kubikRole="link"]:focus {
+    border: none;
+    padding: 4px 0;
+    text-decoration: underline;
+}
+
 QPushButton:disabled,
 QPushButton:default:disabled {
     color: @bone.faint@;
@@ -400,7 +419,8 @@ QScrollBar::sub-page {
 
 /* ── The shell (ui/kubik/) ──────────────────────────────────────────────── */
 
-#kubikSidebar {
+#kubikSidebar,
+#kubikSettingsNav {
     background-color: @void.raised@;
 }
 
@@ -413,7 +433,8 @@ QScrollBar::sub-page {
 
 /* Rail rows: no frame, a filled row for the current page with a grass bar on
    its left edge (a filled shape, not a rule). */
-#kubikSidebar QPushButton {
+#kubikSidebar QPushButton,
+#kubikSettingsNav QPushButton {
     color: @bone.muted@;
     background-color: transparent;
     border: none;
@@ -426,12 +447,14 @@ QScrollBar::sub-page {
     font-weight: 600;
 }
 
-#kubikSidebar QPushButton:hover {
+#kubikSidebar QPushButton:hover,
+#kubikSettingsNav QPushButton:hover {
     color: @bone@;
     background-color: @void.panel@;
 }
 
-#kubikSidebar QPushButton:checked {
+#kubikSidebar QPushButton:checked,
+#kubikSettingsNav QPushButton:checked {
     color: @bone@;
     background-color: @void.panel@;
     border-left-color: @grass@;
@@ -442,12 +465,13 @@ QScrollBar::sub-page {
     width: 0;
 }
 
-/* The account row holds a player name or "Add Microsoft account", which runs long in Indonesian. */
-#kubikSidebar QPushButton#kubikAccountChip {
-    color: @bone@;
-    font-family: "@font.body@";
-    font-size: 14px;
+/* A heading inside a dropdown (the profile card's "Minecraft", "kubik.gg"): a label, not an action. */
+#kubikMenuHeader {
+    color: @bone.faint@;
+    font-family: "@font.display@";
+    font-size: 12px;
     font-weight: 600;
+    padding: 6px 12px 2px 12px;
 }
 
 #kubikPage {
@@ -512,4 +536,75 @@ QPushButton[kubikRole="row"]:hover {
 #kubikArt {
     background-color: @void.panel@;
     border-radius: 6px;
+}
+
+/* ── First run and small dialogs ────────────────────────────────────────── */
+
+#kubikStepLabel {
+    color: @bone.faint@;
+    font-family: "@font.display@";
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* A quiet aside under the actions: what happens next, never what to do. */
+#kubikPageNote {
+    color: @bone.faint@;
+    font-size: 13px;
+}
+
+#kubikDialogTitle {
+    color: @bone@;
+    font-family: "@font.display@";
+    font-size: 20px;
+    font-weight: 700;
+}
+
+/* The server page's "How you join" card: a raised block, no frame. */
+#kubikJoinCard {
+    background-color: @void.panel@;
+    border-radius: 8px;
+}
+
+/* Settings › Profiles: one raised row per Minecraft profile. */
+#kubikProfileRow {
+    background-color: @void.panel@;
+    border-radius: 8px;
+}
+
+/* The memory slider: a filled track up to the handle, in the accent. */
+QSlider#kubikMemory::groove:horizontal {
+    height: 6px;
+    background-color: @block@;
+    border-radius: 3px;
+}
+
+QSlider#kubikMemory::sub-page:horizontal {
+    background-color: @grass@;
+    border-radius: 3px;
+}
+
+QSlider#kubikMemory::handle:horizontal {
+    width: 18px;
+    height: 18px;
+    margin: -6px 0;
+    background-color: @bone@;
+    border-radius: 9px;
+}
+
+/* Home's "Jump back in": the one raised block above the grid. */
+#kubikHero {
+    background-color: @void.panel@;
+    border-radius: 10px;
+}
+
+#kubikHeroName {
+    color: @bone@;
+    font-family: "@font.display@";
+    font-size: 24px;
+    font-weight: 700;
+}
+
+#kubikHero QPushButton#kubikHeroPlay {
+    padding: 9px 30px;
 }

@@ -128,6 +128,17 @@ MinecraftSettingsWidget::MinecraftSettingsWidget(MinecraftInstance* instance, QW
         connect(latestVersion.get(), &Setting::SettingChanged, this, [this](const Setting&, const QVariant&) {
             m_ui->latestMCVersionGroupBox->setChecked(m_instance->settings()->get("UseLatestMinecraftVersion").toBool());
         });
+        // KubikLauncher: an instance's settings are its game window, the profile it plays with, and
+        // Java. Prism's tweaks, commands, environment, console, game time, auto-join (Kubik joins the
+        // server itself), data packs, loader overrides and version tracking are hidden; their
+        // widgets stay, so saving writes back exactly what was loaded.
+        for (auto* tab : { m_ui->environmentVariablesPage, m_ui->customCommandsPage, m_ui->tweaksPage }) {
+            m_ui->settingsTabs->removeTab(m_ui->settingsTabs->indexOf(tab));
+        }
+        for (auto* box : { m_ui->serverJoinGroupBox, m_ui->globalDataPacksGroupBox, m_ui->loaderGroup, m_ui->latestMCVersionGroupBox,
+                           m_ui->consoleSettingsBox, m_ui->gameTimeGroupBox }) {
+            box->hide();
+        }
     }
 
     m_ui->maximizedWarning->hide();

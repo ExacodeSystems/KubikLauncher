@@ -79,6 +79,7 @@
 
 #include "ui/dialogs/CustomMessageBox.h"
 
+#include "ui/kubik/KubikSettingsDialog.h"
 #include "ui/pagedialog/PageDialog.h"
 
 #include "ui/themes/ThemeManager.h"
@@ -830,8 +831,14 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         // KubikLauncher (launcher/kubik/): which instance each server last played in, as a JSON map
         // of server id to instance id, and the kubik.gg origins a dev build may point elsewhere.
         m_settings->registerSetting("KubikServerInstances", "{}");
+        // When each server was last played (server id -> epoch ms), for Home's "Jump back in".
+        m_settings->registerSetting("KubikServerLastPlayed", "{}");
+        // The server page's "How you join" card opens by itself until the player dismisses it once.
+        m_settings->registerSetting("KubikJoinTipSeen", false);
         m_settings->registerSetting("KubikApiUrlOverride", QString());
         m_settings->registerSetting("KubikWebUrlOverride", QString());
+        // "Skip for now" on the setup wizard's Microsoft page: the wizard stops asking on every start.
+        m_settings->registerSetting("KubikSkippedMinecraftSignIn", false);
 
         // Window state and geometry
         m_settings->registerSetting("MainWindowState", "");
@@ -926,19 +933,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         // Custom Technic Client ID
         m_settings->registerSetting("TechnicClientID", "");
 
-        // Init page provider
-        {
-            m_globalSettingsProvider = std::make_unique<GenericPageProvider>(tr("Settings"));
-            m_globalSettingsProvider->addPage<LauncherPage>();
-            m_globalSettingsProvider->addPage<LanguagePage>();
-            m_globalSettingsProvider->addPage<AppearancePage>();
-            m_globalSettingsProvider->addPage<MinecraftPage>();
-            m_globalSettingsProvider->addPage<JavaPage>();
-            m_globalSettingsProvider->addPage<AccountListPage>();
-            m_globalSettingsProvider->addPage<APIPage>();
-            m_globalSettingsProvider->addPage<ExternalToolsPage>();
-            m_globalSettingsProvider->addPage<ProxyPage>();
-        }
+        // Settings is KubikSettingsDialog (ShowGlobalSettings). Prism's nine pages stay in the tree for
+        // upstream merges but are no longer registered.
 
         PixmapCache::setInstance(new PixmapCache(this));
 
@@ -1280,7 +1276,8 @@ bool Application::createSetupWizard()
     bool pasteInterventionRequired = settings()->get("PastebinURL") != "";
     bool validWidgets = m_themeManager->isValidApplicationTheme(settings()->get("ApplicationTheme").toString());
     bool validIcons = m_themeManager->isValidIconTheme(settings()->get("IconTheme").toString());
-    bool login = !m_accounts->anyAccountIsValid() && (capabilities().testAnyFlags(Application::SupportsMSA));
+    bool login = !m_accounts->anyAccountIsValid() && (capabilities().testAnyFlags(Application::SupportsMSA)) &&
+                 !settings()->get("KubikSkippedMinecraftSignIn").toBool();
     bool themeInterventionRequired = !validWidgets || !validIcons;
     bool wizardRequired = javaRequired || languageRequired || pasteInterventionRequired || themeInterventionRequired || askjava || login;
     if (wizardRequired) {
@@ -1692,16 +1689,14 @@ void Application::controllerFinished()
 
 void Application::ShowGlobalSettings(class QWidget* parent, QString openPage)
 {
-    if (!m_globalSettingsProvider) {
-        return;
-    }
     emit globalSettingsAboutToOpen();
     {
         SettingsObject::Lock lock(APPLICATION->settings());
-        PageDialog dlg(m_globalSettingsProvider.get(), std::move(openPage), parent);
-        connect(&dlg, &PageDialog::applied, this, &Application::globalSettingsApplied);
+        KubikSettingsDialog dlg(openPage, parent);
         dlg.exec();
     }
+    // Every control saved as it changed; listeners (the main window, an open instance's settings) reload now.
+    emit globalSettingsApplied();
 }
 
 MainWindow* Application::showMainWindow(bool minimized)

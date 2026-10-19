@@ -60,6 +60,8 @@ class KubikSyncTask : public Task {
     void apply();
     bool placeFromCache(const Kubik::Mod& mod);
     void raiseLoaderBuild();
+    /** servers.dat and the Kubik resource pack (KubikGameFiles); best-effort, it never stops a join. */
+    void applyGameFiles(Kubik::ManagedState& next);
 
     QPointer<MinecraftInstance> m_instance;
     Kubik::Pack m_pack;

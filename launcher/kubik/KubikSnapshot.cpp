@@ -24,7 +24,10 @@
 #include <QDir>
 #include <QLineEdit>
 #include <QMainWindow>
+#include <QMenu>
+#include <QPushButton>
 #include <QTimer>
+#include <QWizard>
 
 #include <functional>
 
@@ -35,6 +38,7 @@
 #include "ui/instanceview/InstanceView.h"
 #include "ui/kubik/KubikHomePage.h"
 #include "ui/kubik/KubikInstanceDelegate.h"
+#include "ui/kubik/KubikProfileCard.h"
 #include "ui/kubik/KubikServerPage.h"
 #include "ui/kubik/KubikServerTiles.h"
 #include "ui/kubik/KubikServersPage.h"
@@ -139,6 +143,12 @@ void startIfRequested()
           } },
         // The pack arrives a moment after the page opens; this shows it filled in.
         { "Server-pack", {} },
+        { "Server-how-to-join",
+          [](QMainWindow* window) {
+              if (auto* link = window->findChild<QPushButton*>("kubikHowToJoin")) {
+                  link->click();
+              }
+          } },
         { "Instances",
           [](QMainWindow* window) {
               if (auto* sidebar = window->findChild<KubikSidebar*>()) {
@@ -152,13 +162,18 @@ void startIfRequested()
                   emit home->instanceOpened(id);
               }
           } },
-        { "Settings",
+        // The profile card's dropdown is a popup, saved on its own.
+        { "Profile-menu",
           [](QMainWindow* window) {
-              if (auto* sidebar = window->findChild<KubikSidebar*>()) {
-                  emit sidebar->settingsRequested();
+              if (auto* card = window->findChild<KubikProfileCard*>()) {
+                  card->click();
               }
           },
           true },
+        { "Settings-General", [](QMainWindow* window) { APPLICATION->ShowGlobalSettings(window, "general"); }, true },
+        { "Settings-Game", [](QMainWindow* window) { APPLICATION->ShowGlobalSettings(window, "minecraft-settings"); }, true },
+        { "Settings-Java", [](QMainWindow* window) { APPLICATION->ShowGlobalSettings(window, "java-settings"); }, true },
+        { "Settings-Profiles", [](QMainWindow* window) { APPLICATION->ShowGlobalSettings(window, "accounts"); }, true },
         // Switching language at runtime: everything on screen must follow without a restart.
         { "Servers-language-switched",
           [](QMainWindow* window) {
@@ -211,7 +226,28 @@ void startIfRequested()
         static int waited = 0;
         static QString dialogName;
 
-        // A dialog in front (the setup wizard, or one a step opened): save it, then dismiss it.
+        // The setup wizard: every page in turn, and on the Microsoft page its skip confirmation once.
+        if (auto* wizard = qobject_cast<QWizard*>(QApplication::activeModalWidget())) {
+            static bool askedSkip = false;
+            save(wizard, dir, ++shot, "Wizard-" + wizard->currentPage()->objectName());
+            if (wizard->currentId() != wizard->pageIds().last()) {
+                wizard->next();
+            } else if (auto* skip = wizard->currentPage()->findChild<QPushButton*>("kubikSkip"); skip && !askedSkip) {
+                askedSkip = true;
+                QTimer::singleShot(0, skip, &QPushButton::click);
+            } else {
+                wizard->reject();
+            }
+            return;
+        }
+        // A menu a step opened (the profile card's): save it, then close it.
+        if (auto* menu = qobject_cast<QMenu*>(QApplication::activePopupWidget())) {
+            save(menu, dir, ++shot, dialogName.isEmpty() ? QString("Menu") : dialogName);
+            dialogName.clear();
+            menu->close();
+            return;
+        }
+        // A dialog in front (one a step opened): save it, then dismiss it.
         if (auto* modal = qobject_cast<QDialog*>(QApplication::activeModalWidget())) {
             save(modal, dir, ++shot, dialogName.isEmpty() ? QString(modal->metaObject()->className()) : dialogName);
             dialogName.clear();

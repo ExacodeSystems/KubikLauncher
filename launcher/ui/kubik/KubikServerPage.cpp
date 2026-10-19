@@ -21,9 +21,12 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QEvent>
+#include <QFrame>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPainter>
+#include <QPainterPath>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QScrollArea>
@@ -39,6 +42,9 @@
 #include "kubik/KubikPlay.h"
 #include "kubik/KubikProfiles.h"
 #include "kubik/KubikWindowChrome.h"
+#include "minecraft/auth/AccountList.h"
+#include "settings/SettingsObject.h"
+#include "ui/kubik/KubikAccounts.h"
 #include "ui/kubik/KubikInstancePicker.h"
 #include "ui/kubik/KubikServerTiles.h"
 
@@ -46,7 +52,6 @@ namespace {
 
 constexpr int MARGIN = 32;
 constexpr int ART_SIDE = 168;
-constexpr int ICON_SIDE = 128;
 
 QLabel* sectionTitle(QWidget* parent)
 {
@@ -141,9 +146,18 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     });
     // One action in the hero: Play. Its natural width, so it never pushes past a narrow window.
     m_playButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    m_howToJoin = new QPushButton(content);
+    m_howToJoin->setObjectName("kubikHowToJoin");
+    m_howToJoin->setProperty("kubikRole", "link");
+    m_howToJoin->setCursor(Qt::PointingHandCursor);
+    connect(m_howToJoin, &QPushButton::clicked, this, [this] {
+        m_joinOpen = true;
+        updateJoinCard();
+    });
     auto* actions = new QHBoxLayout();
     actions->setSpacing(10);
     actions->addWidget(m_playButton);
+    actions->addWidget(m_howToJoin);
     actions->addStretch();
 
     m_progressText = bodyText(content, "kubikPageSubtitle");
@@ -151,11 +165,37 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     m_progress->setTextVisible(false);
     m_progress->setFixedHeight(6);
     m_progress->setMaximumWidth(420);
+    m_accountNote = bodyText(content, "kubikPageNote");
 
     m_notice = bodyText(content);
     m_noticeAction = new QPushButton(content);
     m_noticeAction->setCursor(Qt::PointingHandCursor);
-    connect(m_noticeAction, &QPushButton::clicked, this, [this] { QDesktopServices::openUrl(QUrl(m_noticeUrl)); });
+    m_noticeAction->setIconSize(QSize(20, 16));
+    connect(m_noticeAction, &QPushButton::clicked, this, [this] {
+        if (m_noticeCallback) {
+            m_noticeCallback();
+        }
+    });
+
+    // ── How joining works: open by itself on the first game, a link after that ──
+    m_joinCard = new QFrame(content);
+    m_joinCard->setObjectName("kubikJoinCard");
+    m_joinTitle = sectionTitle(m_joinCard);
+    m_joinSteps = bodyText(m_joinCard);
+    m_joinDismiss = new QPushButton(m_joinCard);
+    m_joinDismiss->setProperty("kubikRole", "quiet");
+    m_joinDismiss->setCursor(Qt::PointingHandCursor);
+    connect(m_joinDismiss, &QPushButton::clicked, this, [this] {
+        APPLICATION->settings()->set("KubikJoinTipSeen", true);
+        m_joinOpen = false;
+        updateJoinCard();
+    });
+    auto* joinLayout = new QVBoxLayout(m_joinCard);
+    joinLayout->setContentsMargins(18, 16, 18, 12);
+    joinLayout->setSpacing(8);
+    joinLayout->addWidget(m_joinTitle);
+    joinLayout->addWidget(m_joinSteps);
+    joinLayout->addWidget(m_joinDismiss, 0, Qt::AlignRight);
 
     auto* words = new QVBoxLayout();
     words->setSpacing(6);
@@ -168,6 +208,7 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     words->addLayout(actions);
     words->addWidget(m_progressText);
     words->addWidget(m_progress);
+    words->addWidget(m_accountNote);
     words->addStretch();
 
     auto* hero = new QHBoxLayout();
@@ -220,6 +261,7 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     column->addSpacing(10);
     column->addWidget(m_notice);
     column->addWidget(m_noticeAction, 0, Qt::AlignLeft);
+    column->addWidget(m_joinCard);
     column->addSpacing(18);
     column->addWidget(m_instanceTitle);
     column->addWidget(m_instanceLine);
@@ -240,6 +282,9 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(scroll);
 
+    connect(APPLICATION->accounts(), &AccountList::defaultAccountChanged, this, &KubikServerPage::updateAccountNote);
+    connect(APPLICATION->accounts(), &AccountList::listChanged, this, &KubikServerPage::updateAccountNote);
+
     retranslate();
 }
 
@@ -254,10 +299,23 @@ void KubikServerPage::setServer(const Kubik::Server& server)
         m_pack.reset();
         m_packError.clear();
         m_copy->setText(QString());
+        m_joinOpen = false;
     }
 
-    const QString iconKey = server.edition == "bedrock" ? QString("stone") : Kubik::iconForLoader(server.loader);
-    m_art->setPixmap(APPLICATION->icons()->getIcon(iconKey).pixmap(ICON_SIDE, ICON_SIDE));
+    // The same picture as the server's tile on Home, so the two read as one server.
+    const qreal dpr = devicePixelRatioF();
+    QPixmap art(QSize(ART_SIDE, ART_SIDE) * dpr);
+    art.setDevicePixelRatio(dpr);
+    art.fill(Qt::transparent);
+    {
+        QPainter painter(&art);
+        painter.setRenderHint(QPainter::Antialiasing);
+        QPainterPath shape;
+        shape.addRoundedRect(QRectF(0, 0, ART_SIDE, ART_SIDE), 6, 6);
+        painter.setClipPath(shape);
+        KubikServerDelegate::paintArt(&painter, QRect(0, 0, ART_SIDE, ART_SIDE), server, nullptr, false);
+    }
+    m_art->setPixmap(art);
     m_name->setText(server.name);
     m_about->setText(KubikServerDelegate::describe(server));
     QString address = server.address.isEmpty() ? tr("No address yet") : server.address;
@@ -279,8 +337,11 @@ void KubikServerPage::setServer(const Kubik::Server& server)
     } else if (!server.unplayable.isEmpty()) {
         showNotice(KubikPlay::describe({ 422, "unplayable", server.unplayable }));
     }
+    watchInstance();
     updatePlayState();
     updateInstanceLine();
+    updateJoinCard();
+    updateAccountNote();
     if (!sameServer || !m_pack) {
         refreshPack();
     }
@@ -368,12 +429,8 @@ void KubikServerPage::updateInstanceLine()
     if (!playable) {
         return;
     }
-    const QString key = m_server.profile->key;
-    const auto candidates = Kubik::instancesFor(key);
-    auto* instance = Kubik::rememberedInstance(m_server.id, key);
-    if (!instance && candidates.size() == 1) {
-        instance = candidates.first();
-    }
+    const auto candidates = Kubik::instancesFor(m_server.profile->key);
+    auto* instance = currentInstance();
     if (instance) {
         m_instanceLine->setText(tr("Plays in %1.").arg(instance->name()));
         m_instanceOpen->setVisible(true);
@@ -386,12 +443,95 @@ void KubikServerPage::updateInstanceLine()
     m_instanceChange->setVisible(!candidates.isEmpty() && !m_play);
 }
 
+BaseInstance* KubikServerPage::currentInstance() const
+{
+    if (!m_server.profile) {
+        return nullptr;
+    }
+    auto* instance = Kubik::rememberedInstance(m_server.id, m_server.profile->key);
+    if (!instance) {
+        const auto candidates = Kubik::instancesFor(m_server.profile->key);
+        if (candidates.size() == 1) {
+            instance = candidates.first();
+        }
+    }
+    return instance;
+}
+
+bool KubikServerPage::inGame() const
+{
+    auto* instance = currentInstance();
+    return instance && Kubik::playingServer(instance) == m_server.id;
+}
+
+void KubikServerPage::watchInstance()
+{
+    disconnect(m_runningWatch);
+    if (auto* instance = currentInstance()) {
+        m_runningWatch = connect(instance, &BaseInstance::runningStatusChanged, this, [this](bool running) {
+            if (running && !APPLICATION->settings()->get("KubikJoinTipSeen").toBool() && inGame()) {
+                m_joinOpen = true;
+            }
+            updatePlayState();
+            updateJoinCard();
+        });
+    }
+}
+
+void KubikServerPage::updateJoinCard()
+{
+    const bool playable = m_server.profile.has_value() && !m_server.locked;
+    m_howToJoin->setVisible(playable && !m_joinOpen);
+    m_joinCard->setVisible(playable && m_joinOpen);
+    if (!playable) {
+        return;
+    }
+    const bool modded = !m_server.profile->loader.isEmpty() || m_server.profile->isModpack();
+    const QString address = m_server.address;
+    m_joinTitle->setText(inGame() ? tr("How you join %1").arg(m_server.name) : tr("How joining works"));
+    const QStringList steps = {
+        tr("1.  Minecraft opens and connects to %1 by itself.").arg(address),
+        tr("2.  If you leave or get disconnected, open Multiplayer. %1 is at the top of the list.").arg(m_server.name),
+        (modded ? tr("3.  Joining from another launcher? Use the address %1 with %2 and the mods listed below.")
+                : tr("3.  Joining from another launcher? Use the address %1 with %2."))
+            .arg(address, m_server.profile->label),
+    };
+    m_joinSteps->setText(steps.join("\n\n"));
+}
+
+void KubikServerPage::updateAccountNote()
+{
+    const auto account = KubikAccounts::current();
+    const bool offline = account && account->accountType() == AccountType::Offline;
+    m_accountNote->setVisible(offline && m_server.profile.has_value());
+    if (offline) {
+        m_accountNote->setText(tr("Playing as %1, an offline profile. It can only join servers whose owner turned on offline access.")
+                                   .arg(account->profileName()));
+    }
+}
+
+void KubikServerPage::askForAccount()
+{
+    showNotice(
+        tr("Add your Minecraft account to play. Joining a server needs the Microsoft account you bought Minecraft with."),
+        tr("Sign in with Microsoft"),
+        [this] {
+            if (KubikAccounts::addMicrosoft(window())) {
+                showNotice({});
+                play();
+            }
+        },
+        KubikAccounts::microsoftIcon());
+}
+
 void KubikServerPage::updatePlayState()
 {
     const bool running = !m_play.isNull();
+    const bool playing = !running && inGame();
     const bool playable = m_server.profile.has_value() && !m_server.locked;
     m_playButton->setVisible(playable);
-    m_playButton->setText(running ? tr("Cancel") : tr("Play"));
+    m_playButton->setEnabled(!playing);
+    m_playButton->setText(running ? tr("Cancel") : playing ? tr("In game") : tr("Play"));
     m_playButton->setProperty("kubikRole", running ? "quiet" : "primary");
     m_playButton->style()->unpolish(m_playButton);
     m_playButton->style()->polish(m_playButton);
@@ -402,11 +542,21 @@ void KubikServerPage::updatePlayState()
 
 void KubikServerPage::showNotice(const QString& message, const QString& actionLabel, const QString& actionUrl)
 {
+    std::function<void()> open;
+    if (!actionUrl.isEmpty()) {
+        open = [actionUrl] { QDesktopServices::openUrl(QUrl(actionUrl)); };
+    }
+    showNotice(message, actionLabel, open);
+}
+
+void KubikServerPage::showNotice(const QString& message, const QString& actionLabel, std::function<void()> action, const QIcon& icon)
+{
     m_notice->setText(message);
     m_notice->setVisible(!message.isEmpty());
-    m_noticeUrl = actionUrl;
+    m_noticeCallback = std::move(action);
     m_noticeAction->setText(actionLabel);
-    m_noticeAction->setVisible(!actionLabel.isEmpty() && !actionUrl.isEmpty());
+    m_noticeAction->setIcon(icon);
+    m_noticeAction->setVisible(!actionLabel.isEmpty() && m_noticeCallback);
 }
 
 void KubikServerPage::play(bool newInstance)
@@ -444,8 +594,21 @@ void KubikServerPage::play(bool newInstance)
         showNotice(message);
         onPlayFinished();
     });
+    connect(m_play, &KubikPlay::accountNeeded, this, [this] {
+        onPlayFinished();
+        askForAccount();
+    });
     connect(m_play, &KubikPlay::cancelled, this, &KubikServerPage::onPlayFinished);
-    connect(m_play, &KubikPlay::launched, this, &KubikServerPage::onPlayFinished);
+    connect(m_play, &KubikPlay::launched, this, [this] {
+        onPlayFinished();
+        // The instance may be new (first Play), so watch the one this server now plays in.
+        watchInstance();
+        if (!APPLICATION->settings()->get("KubikJoinTipSeen").toBool()) {
+            m_joinOpen = true;
+        }
+        updatePlayState();
+        updateJoinCard();
+    });
     m_progress->setRange(0, 0);
     m_progressText->clear();
     updatePlayState();
@@ -489,6 +652,8 @@ void KubikServerPage::retranslate()
     m_instanceOpen->setText(tr("Open instance"));
     m_instanceChange->setText(tr("Change"));
     m_modsTitle->setText(tr("Mods"));
+    m_howToJoin->setText(tr("How to join"));
+    m_joinDismiss->setText(tr("Got it"));
     if (!m_server.id.isEmpty()) {
         setServer(m_server);
     }

@@ -44,6 +44,7 @@
 #include <FileSystem.h>
 #include <io/stream_reader.h>
 #include <minecraft/MinecraftInstance.h>
+#include <minecraft/ServersDat.h>
 #include <tag_compound.h>
 #include <tag_list.h>
 #include <tag_primitive.h>
@@ -114,47 +115,6 @@ struct Server {
     // Data - temporary
     std::optional<int> m_currentPlayers;  // nullopt if not calculated/calculating
 };
-
-static std::unique_ptr<nbt::tag_compound> parseServersDat(const QString& filename)
-{
-    try {
-        auto res = FS::read(filename);
-        if (!res) {
-            return nullptr;
-        }
-        const auto& input = res.value();
-        std::istringstream foo(std::string(input.constData(), input.size()));
-        auto pair = nbt::io::read_compound(foo);
-
-        if (pair.first != "") {
-            return nullptr;
-        }
-
-        if (pair.second == nullptr) {
-            return nullptr;
-        }
-
-        return std::move(pair.second);
-    } catch (...) {
-        return nullptr;
-    }
-}
-
-static bool serializeServerDat(const QString& filename, nbt::tag_compound* levelInfo)
-{
-    try {
-        if (!FS::ensureFilePathExists(filename)) {
-            return false;
-        }
-        std::ostringstream s;
-        nbt::io::write_tag("", *levelInfo, s);
-        QByteArray val(s.str().data(), (int)s.str().size());
-        auto res = FS::write(filename, val);
-        return res.has_value();
-    } catch (...) {
-        return false;
-    }
-}
 
 class ServersModel : public QAbstractListModel {
     Q_OBJECT
@@ -417,7 +377,7 @@ class ServersModel : public QAbstractListModel {
         beginResetModel();
         try {
             QList<Server> servers;
-            auto serversDat = parseServersDat(serversPath());
+            auto serversDat = ServersDat::read(serversPath());
             if (serversDat) {
                 auto& serversList = serversDat->at("servers").as<nbt::tag_list>();
                 for (auto& iter : serversList) {
@@ -502,7 +462,7 @@ class ServersModel : public QAbstractListModel {
         }
         out.insert("servers", nbt::value(std::move(list)));
 
-        if (!serializeServerDat(path, &out)) {
+        if (!ServersDat::write(path, out)) {
             qDebug() << "Failed to save server list:" << path << "Will try again.";
             scheduleSave();
         }

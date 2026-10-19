@@ -58,6 +58,8 @@ class KubikInstanceInfo : public QObject {
     static QString describe(const KubikInstanceSummary& summary);
     /** "Played 2 days ago" / "Never played". */
     static QString lastPlayed(const BaseInstance* instance);
+    /** The same words for any moment (epoch ms; 0 or less is "Never played"). */
+    static QString playedAgo(qint64 lastMs);
     /** "3 h 20 min played" / "Not played yet". */
     static QString totalPlayed(const BaseInstance* instance);
 

@@ -19,11 +19,13 @@
 #pragma once
 
 #include <QElapsedTimer>
+#include <QSet>
 #include <QWidget>
 
 class KubikServerDelegate;
 class KubikServerGrid;
 class KubikServerModel;
+class QFrame;
 class QLabel;
 class QLineEdit;
 class QPushButton;
@@ -37,7 +39,12 @@ struct Server;
 
 /**
  * Home: the player's kubik.gg servers as large tiles. A tile opens the server's
- * page; Play on a tile goes straight there and starts playing.
+ * page; Play on a tile goes straight there and starts playing. Above the grid,
+ * "Jump back in" holds the server played last, with its own Play.
+ *
+ * Servers that are up come first, then the ones played most recently. Running
+ * servers are pinged after every refresh, which is what puts "3/20" and the
+ * server's own icon on its tile.
  *
  * The list is fetched when the page is shown (if it is more than half a minute
  * old) and every minute while it stays on screen, so a server that wakes or
@@ -66,6 +73,9 @@ class KubikServersPage : public QWidget {
    private:
     void retranslate();
     void updateState();
+    void updateHero();
+    void pingServers();
+    void showMenu(const QPoint& position);
 
     KubikServerModel* m_model;
     QSortFilterProxyModel* m_proxy;
@@ -85,6 +95,22 @@ class KubikServersPage : public QWidget {
     QLabel* m_errorText;
     QPushButton* m_retry;
     QLabel* m_noMatches;
+
+    QLabel* m_stale;
+    QPushButton* m_staleRetry;
+
+    QFrame* m_hero;
+    QLabel* m_heroArt;
+    QLabel* m_heroEyebrow;
+    QLabel* m_heroName;
+    QLabel* m_heroLine;
+    QLabel* m_heroStatus;
+    QPushButton* m_heroPlay;
+    QPushButton* m_heroOpen;
+    QString m_heroId;
+    QLabel* m_intro;
+    QLabel* m_allTitle;
+    QSet<QString> m_pinging;
 
     bool m_loaded = false;
     bool m_fetching = false;

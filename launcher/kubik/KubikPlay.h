@@ -78,6 +78,8 @@ class KubikPlay : public QObject {
     /** Several instances fit this server and it has not played in one yet. */
     void choiceNeeded(const QList<BaseInstance*>& candidates);
     void failed(const QString& message);
+    /** Everything is ready but no Minecraft account can play: the page asks the player to add one. */
+    void accountNeeded();
     void launched(const QString& instanceId);
     void cancelled();
 

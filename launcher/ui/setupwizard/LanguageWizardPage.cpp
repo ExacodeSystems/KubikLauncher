@@ -1,47 +1,55 @@
 #include "LanguageWizardPage.h"
 #include <Application.h>
 #include "settings/SettingsObject.h"
-#include <translations/TranslationsModel.h>
 
-#include <BuildConfig.h>
+#include <QLabel>
 #include <QVBoxLayout>
-#include "ui/widgets/LanguageSelectionWidget.h"
+#include "ui/kubik/KubikLanguagePicker.h"
 
 LanguageWizardPage::LanguageWizardPage(QWidget* parent) : BaseWizardPage(parent)
 {
     setObjectName(QStringLiteral("languagePage"));
-    auto layout = new QVBoxLayout(this);
-    mainWidget = new LanguageSelectionWidget(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(mainWidget);
+
+    m_step = new QLabel(this);
+    m_step->setObjectName("kubikStepLabel");
+    m_title = new QLabel(this);
+    m_title->setObjectName("kubikPageTitle");
+    m_title->setWordWrap(true);
+    m_body = new QLabel(this);
+    m_body->setObjectName("kubikPageBody");
+    m_body->setWordWrap(true);
+    m_picker = new KubikLanguagePicker(false, this);
+
+    auto* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(12, 8, 12, 0);
+    layout->setSpacing(8);
+    layout->addWidget(m_step);
+    layout->addWidget(m_title);
+    layout->addWidget(m_body);
+    layout->addSpacing(18);
+    layout->addWidget(m_picker);
+    layout->addStretch();
 
     retranslate();
 }
 
 LanguageWizardPage::~LanguageWizardPage() {}
 
-bool LanguageWizardPage::wantsRefreshButton()
+void LanguageWizardPage::initializePage()
 {
-    return true;
-}
-
-void LanguageWizardPage::refresh()
-{
-    auto translations = APPLICATION->translations();
-    translations->downloadIndex();
+    m_step->setText(stepText());
+    m_step->setVisible(!m_step->text().isEmpty());
 }
 
 bool LanguageWizardPage::validatePage()
 {
-    auto settings = APPLICATION->settings();
-    QString key = mainWidget->getSelectedLanguageKey();
-    settings->set("Language", key);
+    APPLICATION->settings()->set("Language", m_picker->selectedLanguage());
     return true;
 }
 
 void LanguageWizardPage::retranslate()
 {
-    setTitle(tr("Language"));
-    setSubTitle(tr("Select the language to use in %1").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
-    mainWidget->retranslate();
+    m_step->setText(stepText());
+    m_title->setText(tr("Choose your language"));
+    m_body->setText(tr("Everything in KubikLauncher follows it. You can change it later in Settings."));
 }

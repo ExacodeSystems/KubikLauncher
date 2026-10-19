@@ -52,6 +52,7 @@
 #include <QtWidgets/QPushButton>
 
 #include "qrencode.h"
+#include "ui/kubik/KubikAccounts.h"
 
 namespace {
 QString formatError(const QString& reason)
@@ -72,9 +73,14 @@ MSALoginDialog::MSALoginDialog(QWidget* parent) : QDialog(parent), ui(new Ui::MS
 {
     ui->setupUi(this);
 
+    // KubikLauncher: Microsoft's mark on its button, and a code large enough to read off the screen and type.
+    ui->loginButton->setIcon(KubikAccounts::microsoftIcon());
+    ui->loginButton->setIconSize(QSize(20, 16));
+
     // make font monospace
     QFont font;
-    font.setPixelSize(ui->code->fontInfo().pixelSize());
+    font.setPixelSize(22);
+    font.setBold(true);
     font.setFamily(APPLICATION->settings()->get("ConsoleFont").toString());
     font.setStyleHint(QFont::Monospace);
     font.setFixedPitch(true);

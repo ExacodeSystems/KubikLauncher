@@ -18,6 +18,7 @@
 
 #include "KubikProfiles.h"
 
+#include <QHash>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -34,6 +35,18 @@ namespace {
 QJsonObject choices()
 {
     return QJsonDocument::fromJson(APPLICATION->settings()->get("KubikServerInstances").toString().toUtf8()).object();
+}
+
+QJsonObject lastPlayedMap()
+{
+    return QJsonDocument::fromJson(APPLICATION->settings()->get("KubikServerLastPlayed").toString().toUtf8()).object();
+}
+
+// Which server each running game joined. Not saved: a game outlives nothing but this process.
+QHash<QString, QString>& playing()
+{
+    static QHash<QString, QString> map;
+    return map;
 }
 
 }  // namespace
@@ -87,6 +100,30 @@ void rememberInstance(const QString& serverId, BaseInstance* instance)
 QStringList serversOf(BaseInstance* instance)
 {
     return instance ? Json::toStringList(instance->settings()->get("KubikServers").toString()) : QStringList();
+}
+
+QDateTime lastPlayed(const QString& serverId)
+{
+    const auto value = lastPlayedMap().value(serverId);
+    return value.isDouble() ? QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(value.toDouble())) : QDateTime();
+}
+
+void recordLaunch(const QString& serverId, BaseInstance* instance)
+{
+    if (serverId.isEmpty()) {
+        return;
+    }
+    auto map = lastPlayedMap();
+    map.insert(serverId, static_cast<double>(QDateTime::currentMSecsSinceEpoch()));
+    APPLICATION->settings()->set("KubikServerLastPlayed", QString::fromUtf8(QJsonDocument(map).toJson(QJsonDocument::Compact)));
+    if (instance) {
+        playing().insert(instance->id(), serverId);
+    }
+}
+
+QString playingServer(BaseInstance* instance)
+{
+    return instance && instance->isRunning() ? playing().value(instance->id()) : QString();
 }
 
 QString iconForLoader(const QString& loader)

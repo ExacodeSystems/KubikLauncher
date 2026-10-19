@@ -18,6 +18,8 @@
 
 #include "KubikServerTiles.h"
 
+#include <QCryptographicHash>
+#include <QFocusEvent>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QPainterPath>
@@ -75,7 +77,28 @@ void KubikServerModel::setServers(QList<Kubik::Server> servers)
 {
     beginResetModel();
     m_servers = std::move(servers);
+    // A server that stopped answering keeps nothing it said before.
+    for (auto it = m_live.begin(); it != m_live.end();) {
+        const auto* s = serverById(it.key());
+        it = s && s->isRunning() ? std::next(it) : m_live.erase(it);
+    }
     endResetModel();
+}
+
+void KubikServerModel::setLive(const QString& id, const KubikServerLive& live)
+{
+    m_live.insert(id, live);
+    for (int row = 0; row < m_servers.size(); ++row) {
+        if (m_servers.at(row).id == id) {
+            emit dataChanged(index(row), index(row));
+        }
+    }
+}
+
+const KubikServerLive* KubikServerModel::live(const QString& id) const
+{
+    const auto it = m_live.constFind(id);
+    return it == m_live.cend() ? nullptr : &it.value();
 }
 
 const Kubik::Server* KubikServerModel::server(const QModelIndex& index) const
@@ -113,6 +136,8 @@ QVariant KubikServerModel::data(const QModelIndex& index, int role) const
             return s->id;
         case Qt::UserRole:
             return QVariant::fromValue(s);
+        case LiveRole:
+            return QVariant::fromValue(live(s->id));
         default:
             return {};
     }
@@ -141,6 +166,12 @@ void KubikServerGrid::resizeEvent(QResizeEvent* event)
 {
     QListView::resizeEvent(event);
     relayout();
+}
+
+void KubikServerGrid::focusInEvent(QFocusEvent* event)
+{
+    m_keyboardFocus = event->reason() == Qt::TabFocusReason || event->reason() == Qt::BacktabFocusReason;
+    QListView::focusInEvent(event);
 }
 
 void KubikServerGrid::relayout()
@@ -211,6 +242,40 @@ QColor KubikServerDelegate::statusColour(const Kubik::Server& s)
     return color("sky.soft");
 }
 
+QString KubikServerDelegate::statusLine(const Kubik::Server& s, const KubikServerLive* live)
+{
+    if (!s.locked && s.isRunning() && live && live->online >= 0 && live->max > 0) {
+        return tr("Online · %1/%2").arg(live->online).arg(live->max);
+    }
+    return statusText(s);
+}
+
+void KubikServerDelegate::paintArt(QPainter* painter, const QRect& art, const Kubik::Server& server, const KubikServerLive* live, bool lit)
+{
+    painter->save();
+    painter->fillRect(art, color(lit ? "void.panel" : "void.raised"));
+    // One of the brand's deep tones, picked by the server's id, washed over the ground.
+    static const char* tones[] = { "grass.deep", "sky.deep", "gold.deep", "ender.deep" };
+    const auto digest = QCryptographicHash::hash(server.id.toUtf8(), QCryptographicHash::Sha1);
+    QColor tint = color(tones[static_cast<unsigned char>(digest.at(0)) % (sizeof(tones) / sizeof(tones[0]))]);
+    tint.setAlphaF(lit ? 0.42 : 0.30);
+    painter->fillRect(art, tint);
+
+    const qreal dpr = painter->device()->devicePixelRatioF();
+    const int side = qMin(96, art.height() * 62 / 100);
+    QRect iconRect(0, 0, side, side);
+    iconRect.moveCenter(art.center());
+    if (live && !live->favicon.isNull()) {
+        // The server's own 64x64 icon: pixel art, so scaled without smoothing.
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter->drawImage(iconRect, live->favicon);
+    } else {
+        const QString iconKey = server.edition == "bedrock" ? QString("stone") : Kubik::iconForLoader(server.loader);
+        painter->drawPixmap(iconRect, iconPixmap(APPLICATION->icons()->getIcon(iconKey), side, dpr));
+    }
+    painter->restore();
+}
+
 QString KubikServerDelegate::describe(const Kubik::Server& s)
 {
     if (s.unplayable == "bedrock") {
@@ -241,26 +306,20 @@ void KubikServerDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
+    const auto* live = index.data(KubikServerModel::LiveRole).value<const KubikServerLive*>();
     QPainterPath shape;
     shape.addRoundedRect(QRectF(tile), RADIUS, RADIUS);
     painter->fillPath(shape, color(lit ? "block" : "void.panel"));
     painter->save();
     painter->setClipPath(shape);
-    painter->fillRect(art, color(lit ? "void.panel" : "void.raised"));
+    paintArt(painter, art, *server, live, lit);
     painter->restore();
-
-    // The loader's own icon, as on the instance it plays in.
-    const int side = qMin(96, art.height() * 62 / 100);
-    QRect iconRect(0, 0, side, side);
-    iconRect.moveCenter(art.center());
-    const QString iconKey = server->edition == "bedrock" ? QString("stone") : Kubik::iconForLoader(server->loader);
-    painter->drawPixmap(iconRect, iconPixmap(APPLICATION->icons()->getIcon(iconKey), side, painter->device()->devicePixelRatioF()));
 
     // Status, in the art field's corner: a dot that carries the colour, and words that carry the meaning.
     const QFont smallFont = font(KubikBrand::bodyFamily(), 13, QFont::Normal);
     const QFontMetrics small(smallFont);
     {
-        const QString text = statusText(*server);
+        const QString text = statusLine(*server, live);
         const int pillWidth = 10 + 8 + 6 + small.horizontalAdvance(text) + 10;
         const QRect pill(art.left() + 10, art.top() + 10, pillWidth, 24);
         QPainterPath path;
@@ -306,9 +365,21 @@ void KubikServerDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     if (server->edition == "bedrock" && server->port > 0) {
         address += ":" + QString::number(server->port);
     }
+    // Addresses are typed into Minecraft, so they are set in the mono face.
+    const QFont monoFont = font(KubikBrand::monoFamily(), 12, QFont::Normal);
+    painter->setFont(address.isEmpty() ? smallFont : monoFont);
     painter->setPen(color("bone.faint"));
-    painter->drawText(QRect(textLeft, y, fullWidth, LINE_HEIGHT), Qt::AlignLeft | Qt::AlignVCenter,
-                      small.elidedText(address.isEmpty() ? tr("No address yet") : address, Qt::ElideRight, fullWidth));
+    painter->drawText(
+        QRect(textLeft, y, fullWidth, LINE_HEIGHT), Qt::AlignLeft | Qt::AlignVCenter,
+        QFontMetrics(painter->font()).elidedText(address.isEmpty() ? tr("No address yet") : address, Qt::ElideRight, fullWidth));
+
+    // The keyboard's place in the grid (Enter opens it, Space plays it).
+    const auto* grid = qobject_cast<const KubikServerGrid*>(option.widget);
+    if ((option.state & QStyle::State_HasFocus) && grid && grid->keyboardFocus()) {
+        painter->setPen(QPen(color("grass.deep"), 2));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(QRectF(tile).adjusted(1, 1, -1, -1), RADIUS - 1, RADIUS - 1);
+    }
 
     painter->restore();
 }
