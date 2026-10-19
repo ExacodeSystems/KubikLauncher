@@ -878,6 +878,22 @@ SET(LAUNCHER_SOURCES
     # KubikLauncher
     kubik/KubikBrand.cpp
     kubik/KubikBrand.h
+    kubik/KubikAccount.cpp
+    kubik/KubikAccount.h
+    kubik/KubikApi.cpp
+    kubik/KubikApi.h
+    kubik/KubikInstanceTask.cpp
+    kubik/KubikInstanceTask.h
+    kubik/KubikModels.cpp
+    kubik/KubikModels.h
+    kubik/KubikPlay.cpp
+    kubik/KubikPlay.h
+    kubik/KubikProfiles.cpp
+    kubik/KubikProfiles.h
+    kubik/KubikSyncPlan.cpp
+    kubik/KubikSyncPlan.h
+    kubik/KubikSyncTask.cpp
+    kubik/KubikSyncTask.h
     kubik/KubikSnapshot.cpp
     kubik/KubikSnapshot.h
     kubik/KubikWindowChrome.h
@@ -889,10 +905,18 @@ SET(LAUNCHER_SOURCES
     ui/kubik/KubikInstanceInfo.h
     ui/kubik/KubikInstancePage.cpp
     ui/kubik/KubikInstancePage.h
+    ui/kubik/KubikInstancePicker.cpp
+    ui/kubik/KubikInstancePicker.h
+    ui/kubik/KubikServerPage.cpp
+    ui/kubik/KubikServerPage.h
+    ui/kubik/KubikServerTiles.cpp
+    ui/kubik/KubikServerTiles.h
     ui/kubik/KubikServersPage.cpp
     ui/kubik/KubikServersPage.h
     ui/kubik/KubikSidebar.cpp
     ui/kubik/KubikSidebar.h
+    ui/kubik/KubikSignInPage.cpp
+    ui/kubik/KubikSignInPage.h
 
     # Processes
     LaunchMode.h

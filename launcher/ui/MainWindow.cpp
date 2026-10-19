@@ -93,6 +93,7 @@
 #include <updater/ExternalUpdater.h>
 #include "InstanceWindow.h"
 
+#include "kubik/KubikAccount.h"
 #include "kubik/KubikWindowChrome.h"
 #include "ui/GuiUtil.h"
 #include "ui/ViewLogWindow.h"
@@ -114,8 +115,10 @@
 #include "ui/kubik/KubikHomePage.h"
 #include "ui/kubik/KubikInstanceDelegate.h"
 #include "ui/kubik/KubikInstancePage.h"
+#include "ui/kubik/KubikServerPage.h"
 #include "ui/kubik/KubikServersPage.h"
 #include "ui/kubik/KubikSidebar.h"
+#include "ui/kubik/KubikSignInPage.h"
 #include "ui/themes/ITheme.h"
 #include "ui/themes/ThemeManager.h"
 
@@ -313,7 +316,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         view->installEventFilter(this);
         view->setContextMenuPolicy(Qt::CustomContextMenu);
         connect(view, &QWidget::customContextMenuRequested, this, &MainWindow::showInstanceContextMenu);
-        connect(view, &InstanceView::droppedURLs, this, &MainWindow::processURLs, Qt::QueuedConnection);
+        // KubikLauncher: no dropping files onto the grid to import them. Instances are made for servers
+        // (KubikProfiles.h), never by hand.
 
         proxymodel = new InstanceProxyModel(this);
         proxymodel->setSourceModel(APPLICATION->instances());
@@ -325,19 +329,31 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
             [](const QString& groupName) -> bool { return APPLICATION->instances()->isGroupCollapsed(groupName); });
         connect(view, &InstanceView::groupStateChanged, APPLICATION->instances(), &InstanceList::on_GroupStateChanged);
 
-        // KubikLauncher's shell: the rail, and a stack of pages. Prism's instance grid lives on Home
-        // (inside KubikHomePage) with all of its wiring above left as it was.
+        // KubikLauncher's shell: the rail, and a stack of pages. Home is the player's kubik.gg servers;
+        // Prism's instance grid lives on Instances (inside KubikHomePage) with all of its wiring above
+        // left as it was.
         m_sidebar = new KubikSidebar(ui->centralWidget);
         m_pages = new QStackedWidget(ui->centralWidget);
+        m_servers = new KubikServersPage(m_pages);
         m_home = new KubikHomePage(view, proxymodel, m_pages);
         m_instancePage = new KubikInstancePage(m_pages);
-        m_pages->addWidget(m_home);                         // KubikSidebar::Home
-        m_pages->addWidget(new KubikServersPage(m_pages));  // KubikSidebar::Servers
-        m_pages->addWidget(m_instancePage);                 // reached from a tile, not from the rail
+        m_serverPage = new KubikServerPage(m_pages);
+        m_signIn = new KubikSignInPage(m_pages);
+        m_pages->addWidget(m_servers);       // KubikSidebar::Servers
+        m_pages->addWidget(m_home);          // KubikSidebar::Instances
+        m_pages->addWidget(m_instancePage);  // reached from a tile, not from the rail
+        m_pages->addWidget(m_serverPage);    // likewise
+        m_pages->addWidget(m_signIn);        // the whole window until kubik.gg sign-in
         connect(m_sidebar, &KubikSidebar::pageRequested, m_pages, &QStackedWidget::setCurrentIndex);
         connect(m_sidebar, &KubikSidebar::settingsRequested, this, [this] { APPLICATION->ShowGlobalSettings(this); });
 
-        connect(m_home, &KubikHomePage::newInstanceRequested, this, [this](const QString& page) { addInstance({}, {}, page); });
+        connect(m_servers, &KubikServersPage::serverOpened, this, [this](const QString& id) { showServerPage(id); });
+        connect(m_servers, &KubikServersPage::playRequested, this, [this](const QString& id) { showServerPage(id, true); });
+        connect(m_serverPage, &KubikServerPage::backRequested, this, [this] { m_sidebar->setCurrentPage(KubikSidebar::Servers); });
+        connect(m_serverPage, &KubikServerPage::instanceOpened, this, &MainWindow::showInstancePage);
+        connect(KubikAccount::get(), &KubikAccount::changed, this, &MainWindow::updateKubikGate);
+
+        connect(m_home, &KubikHomePage::serversRequested, this, [this] { m_sidebar->setCurrentPage(KubikSidebar::Servers); });
         connect(m_home, &KubikHomePage::instanceOpened, this, &MainWindow::showInstancePage);
         connect(m_home, &KubikHomePage::playRequested, this, &MainWindow::launchInstanceById);
 
@@ -470,7 +486,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->actionToggleStatusBar->setVisible(false);
     ui->actionLockToolbars->setVisible(false);
     // A shortcut only fires for an action on a visible widget, and the menu bar is hidden off macOS.
-    addActions({ ui->actionAddInstance, ui->actionSettings, ui->actionUndoTrashInstance, ui->actionCloseWindow });
+    // "Add instance" (Ctrl+N) is not among them: KubikLauncher makes instances for servers, never by hand.
+    addActions({ ui->actionSettings, ui->actionUndoTrashInstance, ui->actionCloseWindow });
+    ui->actionAddInstance->setEnabled(false);
+    ui->actionAddInstance->setVisible(false);
 
     // The rail's "Help & more": what Prism kept on its toolbar and in menus that are hidden off macOS.
     {
@@ -488,6 +507,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
     m_sidebar->setAccountMenu(ui->actionAccountsButton->menu());
     defaultAccountChanged();
+    updateKubikGate();
     KubikWindowChrome::ignoreSafeArea(this);
 
     retranslateUi();
@@ -1921,7 +1941,32 @@ void MainWindow::showInstancePage(const QString& instanceId)
 
 void MainWindow::showHome()
 {
-    m_sidebar->setCurrentPage(KubikSidebar::Home);
+    // The instance page's way back: to the instances it was opened from.
+    m_sidebar->setCurrentPage(KubikSidebar::Instances);
+}
+
+void MainWindow::showServerPage(const QString& serverId, bool play)
+{
+    const auto* server = m_servers->server(serverId);
+    if (!server) {
+        return;
+    }
+    m_serverPage->setServer(*server);
+    m_pages->setCurrentWidget(m_serverPage);
+    if (play) {
+        m_serverPage->play();
+    }
+}
+
+void MainWindow::updateKubikGate()
+{
+    const bool signedIn = KubikAccount::get()->isSignedIn();
+    m_sidebar->setVisible(signedIn);
+    if (!signedIn) {
+        m_pages->setCurrentWidget(m_signIn);
+    } else if (m_pages->currentWidget() == m_signIn) {
+        m_sidebar->setCurrentPage(KubikSidebar::Servers);
+    }
 }
 
 void MainWindow::launchInstanceById(const QString& instanceId)

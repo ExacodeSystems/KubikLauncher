@@ -18,16 +18,30 @@
 
 #pragma once
 
+#include <QElapsedTimer>
 #include <QWidget>
 
+class KubikServerDelegate;
+class KubikServerGrid;
+class KubikServerModel;
 class QLabel;
+class QLineEdit;
 class QPushButton;
+class QSortFilterProxyModel;
+class QStackedWidget;
+class QTimer;
+
+namespace Kubik {
+struct Server;
+}
 
 /**
- * "My servers": the signed-in customer's Java servers on kubik.gg.
+ * Home: the player's kubik.gg servers as large tiles. A tile opens the server's
+ * page; Play on a tile goes straight there and starts playing.
  *
- * Until Kubik sign-in lands (plan milestone M3) this page says what it will do
- * and links to the dashboard; it never pretends to list anything.
+ * The list is fetched when the page is shown (if it is more than half a minute
+ * old) and every minute while it stays on screen, so a server that wakes or
+ * falls asleep shows it without a refresh button being pressed.
  */
 class KubikServersPage : public QWidget {
     Q_OBJECT
@@ -35,13 +49,47 @@ class KubikServersPage : public QWidget {
    public:
     explicit KubikServersPage(QWidget* parent = nullptr);
 
+    /** The server as last fetched, or nullptr. */
+    const Kubik::Server* server(const QString& id) const;
+    void refresh();
+
+   signals:
+    void serverOpened(const QString& serverId);
+    void playRequested(const QString& serverId);
+
    protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
 
    private:
     void retranslate();
+    void updateState();
+
+    KubikServerModel* m_model;
+    QSortFilterProxyModel* m_proxy;
+    KubikServerGrid* m_grid;
+    KubikServerDelegate* m_delegate;
 
     QLabel* m_title;
-    QLabel* m_body;
-    QPushButton* m_open;
+    QLabel* m_subtitle;
+    QLineEdit* m_search;
+    QPushButton* m_refresh;
+
+    QStackedWidget* m_body;
+    QLabel* m_loading;
+    QLabel* m_emptyTitle;
+    QLabel* m_emptyBody;
+    QPushButton* m_emptyCreate;
+    QLabel* m_errorText;
+    QPushButton* m_retry;
+    QLabel* m_noMatches;
+
+    bool m_loaded = false;
+    bool m_fetching = false;
+    QString m_error;
+    QElapsedTimer m_fetchedAt;
+    QTimer* m_autoRefresh;
+    QString m_pressedPlayId;
 };

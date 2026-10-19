@@ -27,7 +27,12 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include <QDesktopServices>
+#include <QUrl>
+
 #include "Application.h"
+#include "kubik/KubikAccount.h"
+#include "kubik/KubikApi.h"
 #include "kubik/KubikWindowChrome.h"
 
 namespace {
@@ -66,18 +71,27 @@ KubikSidebar::KubikSidebar(QWidget* parent) : QFrame(parent), m_pages(new QButto
     brand->addStretch();
     layout->addLayout(brand);
 
-    m_home = railButton("minecraft", this);
     m_servers = railButton("server", this);
-    for (auto* page : { m_home, m_servers }) {
+    m_instances = railButton("minecraft", this);
+    for (auto* page : { m_servers, m_instances }) {
         page->setCheckable(true);
         layout->addWidget(page);
     }
-    m_pages->addButton(m_home, Home);
     m_pages->addButton(m_servers, Servers);
-    m_home->setChecked(true);
+    m_pages->addButton(m_instances, Instances);
+    m_servers->setChecked(true);
     connect(m_pages, &QButtonGroup::idClicked, this, &KubikSidebar::pageRequested);
 
     layout->addStretch();
+
+    // The kubik.gg account: whose servers these are. Its menu is the rail's own.
+    m_kubik = railButton(QString(), this);
+    m_kubik->setObjectName("kubikAccountChip");
+    m_kubik->setIcon(APPLICATION->logo());
+    m_kubik->setIconSize(QSize(24, 24));
+    m_kubikMenu = new QMenu(this);
+    layout->addWidget(m_kubik);
+    connect(KubikAccount::get(), &KubikAccount::changed, this, &KubikSidebar::updateKubikAccount);
 
     m_account = railButton("noaccount", this);
     m_account->setObjectName("kubikAccountChip");
@@ -94,6 +108,7 @@ KubikSidebar::KubikSidebar(QWidget* parent) : QFrame(parent), m_pages(new QButto
             menu->popup(button->mapToGlobal(QPoint(button->width() + 6, 0)));
         }
     };
+    connect(m_kubik, &QPushButton::clicked, this, [this, popUp] { popUp(m_kubik, m_kubikMenu); });
     connect(m_account, &QPushButton::clicked, this, [this, popUp] { popUp(m_account, m_accountMenu); });
     connect(m_more, &QPushButton::clicked, this, [this, popUp] { popUp(m_more, m_moreMenu); });
 
@@ -125,10 +140,25 @@ void KubikSidebar::setMoreMenu(QMenu* menu)
     m_moreMenu = menu;
 }
 
+void KubikSidebar::updateKubikAccount()
+{
+    const auto& user = KubikAccount::get()->user();
+    m_kubik->setText(user.name.isEmpty() ? user.email : user.name);
+    m_kubik->setToolTip(tr("Signed in to kubik.gg as %1").arg(user.email));
+
+    m_kubikMenu->clear();
+    auto* who = m_kubikMenu->addAction(user.email);
+    who->setEnabled(false);
+    m_kubikMenu->addSeparator();
+    m_kubikMenu->addAction(tr("Open kubik.gg"), this, [] { QDesktopServices::openUrl(QUrl(Kubik::webOrigin() + "/dashboard")); });
+    m_kubikMenu->addAction(tr("Sign out of kubik.gg"), this, [] { KubikAccount::get()->signOut(); });
+}
+
 void KubikSidebar::retranslate()
 {
-    m_home->setText(tr("Home"));
-    m_servers->setText(tr("My servers"));
+    m_servers->setText(tr("Servers"));
+    m_instances->setText(tr("Instances"));
+    updateKubikAccount();
     m_account->setText(m_accountName.isEmpty() ? tr("Add Microsoft account") : m_accountName);
     m_account->setToolTip(tr("Switch or manage your Microsoft accounts"));
     m_settings->setText(tr("Settings"));

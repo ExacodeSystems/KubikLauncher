@@ -132,6 +132,12 @@ BaseInstance::BaseInstance(SettingsObject* globalSettings, std::unique_ptr<Setti
     m_settings->registerSetting("ManagedPackVersionName", "");
     m_settings->registerSetting("ManagedPackURL", "");
 
+    // KubikLauncher (launcher/kubik/KubikProfiles.h): the profile key of the kubik.gg servers this
+    // instance plays (e.g. "fabric-1.21.1"; empty for an instance not made for one), and the ids of
+    // the servers that have played in it, as a JSON list.
+    m_settings->registerSetting("KubikProfile", "");
+    m_settings->registerSetting("KubikServers", "[]");
+
     m_settings->registerSetting("Profiler", "");
 }
 

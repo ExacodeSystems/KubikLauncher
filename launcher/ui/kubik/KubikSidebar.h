@@ -27,18 +27,20 @@ class QPushButton;
 
 /**
  * The main window's left rail: the Kubik mark, the pages, and at the bottom the
- * signed-in account, Settings and "Help & more".
+ * two accounts a player needs (kubik.gg, to see their servers; Microsoft, to
+ * join them), Settings and "Help & more".
  *
- * The rail owns no behaviour beyond navigation: MainWindow hands it the account
- * and help menus it already builds, so switching accounts, opening folders or
- * reading the logs work exactly as they did on Prism's toolbars.
+ * The rail owns no behaviour beyond navigation and the kubik.gg account's own
+ * menu: MainWindow hands it the Microsoft account and help menus it already
+ * builds, so switching accounts, opening folders or reading the logs work
+ * exactly as they did on Prism's toolbars.
  */
 class KubikSidebar : public QFrame {
     Q_OBJECT
 
    public:
     /** The rail's pages, in MainWindow's stack order. */
-    enum Page { Home = 0, Servers = 1 };
+    enum Page { Servers = 0, Instances = 1 };
 
     explicit KubikSidebar(QWidget* parent = nullptr);
 
@@ -57,10 +59,13 @@ class KubikSidebar : public QFrame {
 
    private:
     void retranslate();
+    void updateKubikAccount();
 
     QButtonGroup* m_pages;
-    QPushButton* m_home;
     QPushButton* m_servers;
+    QPushButton* m_instances;
+    QPushButton* m_kubik;
+    QMenu* m_kubikMenu;
     QPushButton* m_account;
     QPushButton* m_settings;
     QPushButton* m_more;

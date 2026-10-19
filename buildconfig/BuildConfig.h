@@ -143,6 +143,10 @@ class Config {
      */
     QString LOGIN_CALLBACK_URL;
 
+    /// kubik.gg's api origin (serves /launcher/v1) and dashboard origin (where the launcher signs in).
+    QString KUBIK_API_URL;
+    QString KUBIK_WEB_URL;
+
     /**
      * Client ID you can get from Imgur when you register an application
      */

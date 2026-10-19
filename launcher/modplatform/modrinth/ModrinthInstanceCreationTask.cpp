@@ -170,7 +170,7 @@ void ModrinthCreationTask::createInstance()
     QString parentFolder(FS::PathCombine(m_stagingPath, "mrpack"));
 
     QString indexPath = FS::PathCombine(m_stagingPath, "modrinth.index.json");
-    if (m_files.empty() && !parseManifest(indexPath, m_files, true, true)) {
+    if (m_files.empty() && !parseManifest(indexPath, m_files, true, !m_optionalFilesEnabled)) {
         return;
     }
 
@@ -432,7 +432,11 @@ bool ModrinthCreationTask::parseManifest(const QString& indexPath, std::vector<F
             }
         } else {
             for (auto file : optionalFiles) {
-                file.path += ".disabled";
+                if (m_optionalFilesEnabled) {
+                    file.required = true;
+                } else {
+                    file.path += ".disabled";
+                }
                 files.push_back(file);
             }
         }

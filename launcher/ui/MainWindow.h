@@ -60,6 +60,9 @@ class KonamiCode;
 class InstanceTask;
 class KubikSidebar;
 class KubikHomePage;
+class KubikServerPage;
+class KubikServersPage;
+class KubikSignInPage;
 class QStackedWidget;
 
 namespace Ui {
@@ -230,6 +233,9 @@ class MainWindow : public QMainWindow {
     // KubikLauncher's shell (ui/kubik/): the rail, Home, the instance page.
     void showInstancePage(const QString& instanceId);
     void showHome();
+    void showServerPage(const QString& serverId, bool play = false);
+    /** Without a kubik.gg sign-in the window is only the sign-in page; with one, the rail and the pages. */
+    void updateKubikGate();
     void launchInstanceById(const QString& instanceId);
     void performInstanceAction(const QString& instanceId, KubikInstancePage::Action action);
     void renameInstanceWithDialog();
@@ -270,4 +276,7 @@ class MainWindow : public QMainWindow {
     QStackedWidget* m_pages = nullptr;
     KubikHomePage* m_home = nullptr;
     KubikInstancePage* m_instancePage = nullptr;
+    KubikServersPage* m_servers = nullptr;
+    KubikServerPage* m_serverPage = nullptr;
+    KubikSignInPage* m_signIn = nullptr;
 };

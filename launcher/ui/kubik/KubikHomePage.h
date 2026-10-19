@@ -29,12 +29,14 @@ class QPushButton;
 class QStackedWidget;
 
 /**
- * Home: every instance as a large tile, and the one obvious way to add another.
+ * Instances: every instance as a large tile, to manage its mods, shaders, worlds
+ * and settings, or delete it.
  *
- * The grid is Prism's InstanceView, kept so that groups, drag-and-drop, renaming,
- * the context menu and the keyboard all keep working; this page gives it large
- * tiles (KubikInstanceDelegate), a header with search, sort and "New instance",
- * and a real empty state in place of the grid when there is nothing to show.
+ * There is no "New instance" here: an instance is made the first time a server
+ * is played, and servers that need the same client share it (KubikProfiles.h).
+ * The grid is Prism's InstanceView, kept so that groups, renaming, the context
+ * menu and the keyboard all keep working; this page gives it large tiles
+ * (KubikInstanceDelegate), a header with search and sort, and a real empty state.
  */
 class KubikHomePage : public QWidget {
     Q_OBJECT
@@ -45,8 +47,8 @@ class KubikHomePage : public QWidget {
     KubikInstanceDelegate* delegate() const { return m_delegate; }
 
    signals:
-    /** "New instance", optionally straight to one of its pages ("vanilla", "modrinth", "import"). */
-    void newInstanceRequested(const QString& page);
+    /** The empty state's way back to the servers, where instances come from. */
+    void serversRequested();
     void instanceOpened(const QString& instanceId);
     void playRequested(const QString& instanceId);
 
@@ -68,13 +70,11 @@ class KubikHomePage : public QWidget {
     QLabel* m_subtitle;
     QLineEdit* m_search;
     QPushButton* m_sort;
-    QPushButton* m_newInstance;
 
     QStackedWidget* m_body;
     QLabel* m_emptyTitle;
     QLabel* m_emptyBody;
-    QPushButton* m_emptyFresh;
-    QPushButton* m_emptyModpack;
+    QPushButton* m_emptyServers;
     QLabel* m_noMatches;
 
     QString m_pressedPlayId;

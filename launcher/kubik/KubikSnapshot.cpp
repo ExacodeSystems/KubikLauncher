@@ -30,10 +30,14 @@
 
 #include "Application.h"
 #include "InstanceList.h"
+#include "kubik/KubikAccount.h"
 #include "translations/TranslationsModel.h"
 #include "ui/instanceview/InstanceView.h"
 #include "ui/kubik/KubikHomePage.h"
 #include "ui/kubik/KubikInstanceDelegate.h"
+#include "ui/kubik/KubikServerPage.h"
+#include "ui/kubik/KubikServerTiles.h"
+#include "ui/kubik/KubikServersPage.h"
 #include "ui/kubik/KubikSidebar.h"
 
 #ifndef NDEBUG
@@ -72,7 +76,26 @@ struct Step {
     QString name;
     std::function<void(QMainWindow*)> prepare;  // may open a modal dialog, which is saved instead
     bool opensDialog = false;
+    // Hold the save until this is true (checked every tick), for at most maxTicks ticks.
+    std::function<bool(QMainWindow*)> until = {};
+    int maxTicks = 0;
 };
+
+/** Open the server called `name` on its page (the play walk). */
+void openServer(QMainWindow* window, const QString& name)
+{
+    auto* page = window->findChild<KubikServersPage*>();
+    auto* grid = window->findChild<KubikServerGrid*>();
+    if (!page || !grid) {
+        return;
+    }
+    for (int row = 0; row < grid->model()->rowCount(); ++row) {
+        const auto index = grid->model()->index(row, 0);
+        if (index.data(Qt::DisplayRole).toString() == name) {
+            emit page->serverOpened(index.data(KubikServerModel::IdRole).toString());
+        }
+    }
+}
 
 }  // namespace
 #endif
@@ -90,41 +113,38 @@ void startIfRequested()
     }
     QDir().mkpath(dir);
 
-    static const QList<Step> steps = {
-        { "Home", {} },
-        { "Home-hover",
+    // Signed out, the window is the sign-in page and nothing else; signed in (a kubik-auth.json in the
+    // data dir, pointed at an api with KUBIKLAUNCHER_API_URL), the walk goes through every page.
+    static const QList<Step> signedOut = {
+        { "SignIn", {} },
+    };
+    static const QList<Step> signedIn = {
+        { "Servers", {} },
+        { "Servers-hover",
           [](QMainWindow* window) {
-              auto* home = window->findChild<KubikHomePage*>();
-              auto* view = window->findChild<InstanceView*>();
-              if (home && view && view->model()->rowCount() > 0) {
-                  home->delegate()->setHoveredIndex(view->model()->index(0, 0));
-                  view->viewport()->update();
+              auto* grid = window->findChild<KubikServerGrid*>();
+              auto* delegate = grid ? qobject_cast<KubikServerDelegate*>(grid->itemDelegate()) : nullptr;
+              if (delegate && grid->model()->rowCount() > 0) {
+                  delegate->setHoveredIndex(grid->model()->index(0, 0));
+                  grid->viewport()->update();
               }
           } },
-        { "Home-search",
+        { "Server",
           [](QMainWindow* window) {
-              if (auto* search = window->findChild<QLineEdit*>("kubikSearch")) {
-                  search->setText("vanilla");
+              auto* page = window->findChild<KubikServersPage*>();
+              auto* grid = window->findChild<KubikServerGrid*>();
+              if (page && grid && grid->model()->rowCount() > 0) {
+                  emit page->serverOpened(grid->model()->index(0, 0).data(KubikServerModel::IdRole).toString());
               }
           } },
-        { "Home-search-none",
+        // The pack arrives a moment after the page opens; this shows it filled in.
+        { "Server-pack", {} },
+        { "Instances",
           [](QMainWindow* window) {
-              if (auto* search = window->findChild<QLineEdit*>("kubikSearch")) {
-                  search->setText("no such instance");
+              if (auto* sidebar = window->findChild<KubikSidebar*>()) {
+                  sidebar->setCurrentPage(KubikSidebar::Instances);
               }
           } },
-        // Play with no Microsoft account: the launch must stop at the "add an account" prompt.
-        { "Play-no-account",
-          [](QMainWindow* window) {
-              if (auto* search = window->findChild<QLineEdit*>("kubikSearch")) {
-                  search->clear();
-              }
-              const QString id = firstInstanceId(window);
-              if (auto* home = window->findChild<KubikHomePage*>(); home && !id.isEmpty()) {
-                  emit home->playRequested(id);
-              }
-          },
-          true },
         { "Instance",
           [](QMainWindow* window) {
               const QString id = firstInstanceId(window);
@@ -132,19 +152,6 @@ void startIfRequested()
                   emit home->instanceOpened(id);
               }
           } },
-        { "Servers",
-          [](QMainWindow* window) {
-              if (auto* sidebar = window->findChild<KubikSidebar*>()) {
-                  sidebar->setCurrentPage(KubikSidebar::Servers);
-              }
-          } },
-        { "NewInstance",
-          [](QMainWindow* window) {
-              if (auto* home = window->findChild<KubikHomePage*>()) {
-                  emit home->newInstanceRequested(QString());
-              }
-          },
-          true },
         { "Settings",
           [](QMainWindow* window) {
               if (auto* sidebar = window->findChild<KubikSidebar*>()) {
@@ -153,15 +160,47 @@ void startIfRequested()
           },
           true },
         // Switching language at runtime: everything on screen must follow without a restart.
-        { "Home-language-switched",
+        { "Servers-language-switched",
           [](QMainWindow* window) {
               auto* translations = APPLICATION->translations();
               translations->selectLanguage(translations->selectedLanguage() == "id" ? "en_US" : "id");
               if (auto* sidebar = window->findChild<KubikSidebar*>()) {
-                  sidebar->setCurrentPage(KubikSidebar::Home);
+                  sidebar->setCurrentPage(KubikSidebar::Servers);
               }
           } },
     };
+    // KUBIKLAUNCHER_SNAPSHOT_PLAY=<server name>: press Play on that server for real (install the instance,
+    // sync its mods, launch), then open the next server of the same profile to show it shares the instance.
+    static const QString playServer = qEnvironmentVariable("KUBIKLAUNCHER_SNAPSHOT_PLAY");
+    static const QString shareServer = qEnvironmentVariable("KUBIKLAUNCHER_SNAPSHOT_SHARE");
+    static const QList<Step> playWalk = {
+        { "Servers", {} },
+        { "Play-server", [](QMainWindow* window) { openServer(window, playServer); } },
+        { "Play-started",
+          [](QMainWindow* window) {
+              if (auto* page = window->findChild<KubikServerPage*>()) {
+                  page->play();
+              }
+          } },
+        { "Play-progress", {}, false, [](QMainWindow*) { return false; }, 8 },
+        // Installing Minecraft and the loader is a real download: give it ten minutes.
+        { "Play-finished",
+          {},
+          false,
+          [](QMainWindow* window) {
+              auto* page = window->findChild<KubikServerPage*>();
+              return page && !page->isPlaying();
+          },
+          240 },
+        { "Instances-after-play",
+          [](QMainWindow* window) {
+              if (auto* sidebar = window->findChild<KubikSidebar*>()) {
+                  sidebar->setCurrentPage(KubikSidebar::Instances);
+              }
+          } },
+        { "Shared-server", [](QMainWindow* window) { openServer(window, shareServer); } },
+    };
+    static const QList<Step>& steps = !KubikAccount::get()->isSignedIn() ? signedOut : playServer.isEmpty() ? signedIn : playWalk;
 
     auto* timer = new QTimer(qApp);
     timer->setInterval(2500);
@@ -169,6 +208,7 @@ void startIfRequested()
         static int shot = 0;
         static int step = 0;
         static bool pendingSave = false;
+        static int waited = 0;
         static QString dialogName;
 
         // A dialog in front (the setup wizard, or one a step opened): save it, then dismiss it.
@@ -184,7 +224,13 @@ void startIfRequested()
             return;
         }
         if (pendingSave) {
-            save(window, dir, ++shot, steps[step].name);
+            const Step& current = steps[step];
+            if (current.until && !current.until(window) && waited < current.maxTicks) {
+                ++waited;
+                return;
+            }
+            waited = 0;
+            save(window, dir, ++shot, current.name);
             pendingSave = false;
             ++step;
             return;

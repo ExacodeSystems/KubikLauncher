@@ -409,6 +409,8 @@ void InstanceImportTask::processModrinth()
         instCreationTask = makeShared<ModrinthCreationTask>(m_stagingPath, m_trustedSource, m_globalSettings, m_parent, packId);
     }
 
+    // KubikLauncher: a pack installed for a kubik.gg server keeps its optional files enabled.
+    instCreationTask->setOptionalFilesEnabled(m_extraInfo.value("kubik_optional_files") == "enabled");
     instCreationTask->setName(modifiedName());
     instCreationTask->setOriginalName(originalName(), version());
     // if the icon was specified by user, use that. otherwise pull icon from the pack

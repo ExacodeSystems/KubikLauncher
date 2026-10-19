@@ -102,12 +102,6 @@ KubikHomePage::KubikHomePage(InstanceView* view, InstanceProxyModel* proxy, QWid
     });
     m_sort->setMenu(sortMenu);
 
-    m_newInstance = new QPushButton(this);
-    m_newInstance->setProperty("kubikRole", "primary");
-    m_newInstance->setIcon(QIcon::fromTheme("new"));
-    m_newInstance->setCursor(Qt::PointingHandCursor);
-    connect(m_newInstance, &QPushButton::clicked, this, [this] { emit newInstanceRequested(QString()); });
-
     auto* titles = new QVBoxLayout();
     titles->setSpacing(2);
     titles->addWidget(m_title);
@@ -120,7 +114,6 @@ KubikHomePage::KubikHomePage(InstanceView* view, InstanceProxyModel* proxy, QWid
     header->addStretch();
     header->addWidget(m_search, 0, Qt::AlignVCenter);
     header->addWidget(m_sort, 0, Qt::AlignVCenter);
-    header->addWidget(m_newInstance, 0, Qt::AlignVCenter);
 
     // ── The grid ────────────────────────────────────────────────────────────
     m_view->setItemDelegate(m_delegate);
@@ -138,7 +131,7 @@ KubikHomePage::KubikHomePage(InstanceView* view, InstanceProxyModel* proxy, QWid
     gridLayout->setContentsMargins(MARGIN - GRID_SPACING, 0, MARGIN - GRID_SPACING, 0);
     gridLayout->addWidget(m_view);
 
-    // ── Empty state: what an instance is, and the two ways to get one ───────
+    // ── Empty state: what an instance is, and where one comes from ──────────
     auto* emptyPage = new QWidget(this);
     auto* emptyColumn = new QWidget(emptyPage);
     emptyColumn->setFixedWidth(480);
@@ -155,17 +148,13 @@ KubikHomePage::KubikHomePage(InstanceView* view, InstanceProxyModel* proxy, QWid
     m_emptyBody->setObjectName("kubikPageBody");
     m_emptyBody->setWordWrap(true);
     emptyLayout->addWidget(m_emptyBody);
-    m_emptyFresh = new QPushButton(emptyColumn);
-    m_emptyFresh->setProperty("kubikRole", "primary");
-    m_emptyFresh->setCursor(Qt::PointingHandCursor);
-    connect(m_emptyFresh, &QPushButton::clicked, this, [this] { emit newInstanceRequested("vanilla"); });
-    m_emptyModpack = new QPushButton(emptyColumn);
-    m_emptyModpack->setCursor(Qt::PointingHandCursor);
-    connect(m_emptyModpack, &QPushButton::clicked, this, [this] { emit newInstanceRequested("modrinth"); });
+    m_emptyServers = new QPushButton(emptyColumn);
+    m_emptyServers->setProperty("kubikRole", "primary");
+    m_emptyServers->setCursor(Qt::PointingHandCursor);
+    connect(m_emptyServers, &QPushButton::clicked, this, &KubikHomePage::serversRequested);
     auto* emptyButtons = new QHBoxLayout();
     emptyButtons->setSpacing(10);
-    emptyButtons->addWidget(m_emptyFresh);
-    emptyButtons->addWidget(m_emptyModpack);
+    emptyButtons->addWidget(m_emptyServers);
     emptyButtons->addStretch();
     emptyLayout->addSpacing(8);
     emptyLayout->addLayout(emptyButtons);
@@ -213,8 +202,6 @@ void KubikHomePage::retranslate()
 {
     m_title->setText(tr("Your instances"));
     m_search->setPlaceholderText(tr("Search instances"));
-    m_newInstance->setText(tr("New instance"));
-    m_newInstance->setToolTip(tr("Make a new instance: a fresh Minecraft, a modpack, or an import"));
 
     QString sortLabel;
     for (auto* action : m_sort->menu()->actions()) {
@@ -224,12 +211,11 @@ void KubikHomePage::retranslate()
     }
     m_sort->setText(sortLabel.isEmpty() ? tr("Sort") : tr("Sort: %1").arg(sortLabel));
 
-    m_emptyTitle->setText(tr("Add your first instance"));
+    m_emptyTitle->setText(tr("No instances yet"));
     m_emptyBody->setText(
-        tr("An instance is one Minecraft setup: its own version, mods, worlds and settings, kept apart "
-           "from the others. Start with a fresh Minecraft, or install a ready-made modpack."));
-    m_emptyFresh->setText(tr("Start fresh"));
-    m_emptyModpack->setText(tr("Install a modpack"));
+        tr("An instance is one Minecraft setup: its own version, mods, worlds and settings. KubikLauncher makes one the "
+           "first time you play a server, and servers that need the same setup share it."));
+    m_emptyServers->setText(tr("See your servers"));
     updateState();
 }
 

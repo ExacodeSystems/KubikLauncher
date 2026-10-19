@@ -827,6 +827,12 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         m_settings->registerSetting("EditInstanceOnDoubleClick", false);
         m_settings->registerSetting("SelectedInstance", QString());
 
+        // KubikLauncher (launcher/kubik/): which instance each server last played in, as a JSON map
+        // of server id to instance id, and the kubik.gg origins a dev build may point elsewhere.
+        m_settings->registerSetting("KubikServerInstances", "{}");
+        m_settings->registerSetting("KubikApiUrlOverride", QString());
+        m_settings->registerSetting("KubikWebUrlOverride", QString());
+
         // Window state and geometry
         m_settings->registerSetting("MainWindowState", "");
         m_settings->registerSetting("MainWindowGeometry", "");

@@ -188,6 +188,11 @@ set(Launcher_WIKI_URL "https://kubik.gg/guides" CACHE STRING "URL that gets open
 # have no kubik.gg equivalent yet. Replace once we write our own.
 set(Launcher_HELP_URL "https://prismlauncher.org/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help in a dialog window")
 set(Launcher_LOGIN_CALLBACK_URL "https://kubik.gg/launcher/signed-in" CACHE STRING "URL that gets opened when the user successfully logins.")
+# kubik.gg itself: the launcher's REST surface (/launcher/v1) and the dashboard it signs in through.
+# A dev build points these at a local api (:8787) and dashboard (WEB_PORT); the settings
+# KubikApiUrlOverride / KubikWebUrlOverride and the env vars KUBIKLAUNCHER_API_URL / _WEB_URL do the same at runtime.
+set(Launcher_KUBIK_API_URL "https://api.kubik.gg" CACHE STRING "kubik.gg's api origin, which serves /launcher/v1.")
+set(Launcher_KUBIK_WEB_URL "https://kubik.gg" CACHE STRING "kubik.gg's dashboard origin, where the launcher signs in.")
 set(Launcher_LEGACY_FMLLIBS_BASE_URL "https://files.prismlauncher.org/fmllibs/" CACHE STRING "URL for legacy (<=1.5.2) FML Libraries.")
 
 ######## Set version numbers ########

@@ -467,6 +467,12 @@ QScrollBar::sub-page {
     font-size: 14px;
 }
 
+/* A sentence that says something went wrong, where the action was. */
+#kubikPageError {
+    color: @heart@;
+    font-size: 14px;
+}
+
 #kubikSectionTitle {
     color: @bone@;
     font-family: "@font.display@";

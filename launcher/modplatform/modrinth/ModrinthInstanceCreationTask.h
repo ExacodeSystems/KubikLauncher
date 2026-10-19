@@ -40,6 +40,13 @@ class ModrinthCreationTask final : public InstanceTask {
     void createInstance();
     void executeTask() override;
 
+    /**
+     * KubikLauncher: take the pack's optional files enabled, without asking. Used when a pack is
+     * installed to join a kubik.gg server, where a mod the pack calls optional may be one the server
+     * needs (docs/plans/phase-10-kubik-launcher.md §10.1 in kubik.gg).
+     */
+    void setOptionalFilesEnabled(bool enabled) { m_optionalFilesEnabled = enabled; }
+
    private slots:
     void finishInstall();
 
@@ -65,6 +72,7 @@ class ModrinthCreationTask final : public InstanceTask {
     std::unique_ptr<MinecraftInstance> m_newInstance;
 
     QString m_rootPath = "minecraft";
+    bool m_optionalFilesEnabled = false;
 
     QHash<QString, Resource*> m_resources;
 };
