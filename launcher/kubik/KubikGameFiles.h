@@ -59,10 +59,11 @@ struct ServerEntry {
 bool upsertServerEntry(nbt::tag_compound& root, const ServerEntry& entry, const QString& previousIp);
 
 /**
- * options.txt with `pack` switched on: added to `resourcePacks` right after "vanilla" (so every
- * other pack, a modpack's included, still wins over it) and to `incompatibleResourcePacks` (so a
- * format this launcher could not name exactly still loads). Every other line is kept as it was;
- * missing lines are added. Answers the text unchanged when the pack is already on.
+ * options.txt with `pack` switched on: added to `resourcePacks` right after "vanilla", so every other
+ * pack (a modpack's included) still wins over it. It is never put on `incompatibleResourcePacks`, and is
+ * taken off it if there: a compatible pack found on that list is left switched off for that session.
+ * packMcmeta's ranges are what make it load on any version. Every other line is kept as it was, and a
+ * missing `resourcePacks` line is added. Answers the text unchanged when the pack is already on.
  */
 QString enableResourcePack(const QString& optionsTxt, const QString& pack);
 
@@ -71,8 +72,8 @@ QString resourcePackEntry(const QString& minecraftVersion, const QString& folder
 
 /**
  * pack.mcmeta for the Kubik pack on this Minecraft version: the exact pack format where Prism's
- * table knows the version, otherwise its newest one with an open range (and the pack is listed as
- * accepted-incompatible in options.txt, so it loads either way).
+ * table knows the version, otherwise its newest one with an open range, which a newer version reads
+ * as compatible.
  */
 QByteArray packMcmeta(const QString& minecraftVersion, const QString& description);
 

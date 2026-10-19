@@ -27,6 +27,7 @@
 
 #include "Application.h"
 #include "kubik/KubikAccount.h"
+#include "kubik/KubikDev.h"
 #include "minecraft/auth/AccountList.h"
 #include "ui/dialogs/skins/SkinManageDialog.h"
 #include "ui/kubik/KubikAccounts.h"
@@ -131,6 +132,10 @@ void KubikProfilesPage::rebuild()
     m_addOffline->setEnabled(canOffline);
     m_offlineNote->setText(canOffline ? tr("Offline profiles can only join servers whose owner turned on offline access.")
                                       : tr("Offline profiles unlock once you add a Microsoft account that owns Minecraft."));
+    if (Kubik::devOfflineAllowed() && !APPLICATION->accounts()->anyAccountIsValid()) {
+        // Developer-facing and Debug-only, so deliberately not translated.
+        m_offlineNote->setText(m_offlineNote->text() + QStringLiteral(" [Development build: KUBIKLAUNCHER_DEV_OFFLINE is on.]"));
+    }
 
     const auto& kubik = KubikAccount::get()->user();
     m_kubikTitle->setText(tr("kubik.gg account"));

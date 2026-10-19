@@ -28,6 +28,7 @@
 #include "InstanceList.h"
 #include "kubik/KubikAccount.h"
 #include "kubik/KubikApi.h"
+#include "kubik/KubikDev.h"
 #include "kubik/KubikInstanceTask.h"
 #include "kubik/KubikProfiles.h"
 #include "kubik/KubikSyncTask.h"
@@ -374,7 +375,7 @@ void KubikPlay::launchIfReady()
     }
     // Asked here rather than by LaunchController, whose answer is a Yes/No box: everything is installed and
     // synced by now, so adding an account on the server page and pressing Play again goes straight in.
-    if (!APPLICATION->accounts()->anyAccountIsValid()) {
+    if (!APPLICATION->accounts()->anyAccountIsValid() && !Kubik::devOfflinePlays(APPLICATION->accounts()->defaultAccount())) {
         m_over = true;
         log(tr("Stopped before starting Minecraft: no Minecraft account can play yet."));
         emit accountNeeded();

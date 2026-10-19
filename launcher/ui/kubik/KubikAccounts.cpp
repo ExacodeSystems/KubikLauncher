@@ -26,6 +26,7 @@
 
 #include "Application.h"
 #include "kubik/KubikBrand.h"
+#include "kubik/KubikDev.h"
 #include "minecraft/auth/AccountList.h"
 #include "ui/dialogs/ChooseOfflineNameDialog.h"
 #include "ui/dialogs/MSALoginDialog.h"
@@ -46,7 +47,7 @@ MinecraftAccountPtr addMicrosoft(QWidget* parent)
 
 bool canAddOffline()
 {
-    return APPLICATION->accounts()->anyAccountIsValid();
+    return APPLICATION->accounts()->anyAccountIsValid() || Kubik::devOfflineAllowed();
 }
 
 MinecraftAccountPtr addOffline(QWidget* parent)

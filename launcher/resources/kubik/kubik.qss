@@ -101,6 +101,12 @@ QPushButton[kubikRole="quiet"]:hover {
     background-color: @void.panel@;
 }
 
+/* A quiet button that is the default (Cancel on "Delete …?") keeps its quiet look; only the role decides colour. */
+QPushButton[kubikRole="quiet"]:default {
+    color: @bone.muted@;
+    background-color: transparent;
+}
+
 /* A button that is a sentence's link: "How to join", "Show Java arguments". Flush with the text
    column (no padding), in the accent, and it lights up rather than filling. */
 QPushButton[kubikRole="link"] {
@@ -659,4 +665,26 @@ QListView#kubikModList,
 QListView#kubikModList::item,
 QListView#kubikModList::item:hover {
     background-color: transparent;
+}
+
+/* Prism's instance window ("More settings"): its page list styled like the rail and the Settings nav. */
+QListView#kubikPageList {
+    background-color: @void.raised@;
+}
+
+QListView#kubikPageList::item {
+    color: @bone.muted@;
+    border-left: 3px solid transparent;
+    padding: 8px 12px;
+}
+
+QListView#kubikPageList::item:hover {
+    color: @bone@;
+    background-color: @void.panel@;
+}
+
+QListView#kubikPageList::item:selected {
+    color: @bone@;
+    background-color: @void.panel@;
+    border-left-color: @grass@;
 }

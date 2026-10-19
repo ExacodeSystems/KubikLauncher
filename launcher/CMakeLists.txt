@@ -884,6 +884,7 @@ SET(LAUNCHER_SOURCES
     kubik/KubikAccount.h
     kubik/KubikApi.cpp
     kubik/KubikApi.h
+    kubik/KubikDev.h
     kubik/KubikGameFiles.cpp
     kubik/KubikGameFiles.h
     kubik/KubikInstanceTask.cpp
@@ -1283,6 +1284,7 @@ qt_add_resources(LAUNCHER_RESOURCES
     resources/documents/documents.qrc
     resources/shaders/shaders.qrc
     resources/kubik/kubik.qrc
+    resources/kubik/resourcepack.qrc
     "${CMAKE_CURRENT_BINARY_DIR}/../${Launcher_Branding_LogoQRC}"
 )
 

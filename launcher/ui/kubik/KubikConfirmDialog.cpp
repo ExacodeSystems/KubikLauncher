@@ -61,7 +61,9 @@ KubikConfirmDialog::KubikConfirmDialog(const QString& title,
     auto* yes = new QPushButton(primary, this);
     yes->setProperty("kubikRole", danger ? "danger" : "primary");
     yes->setCursor(Qt::PointingHandCursor);
-    yes->setDefault(true);
+    // Enter answers with the safe choice: the filled button, unless it is the destructive one.
+    yes->setDefault(!danger);
+    no->setDefault(danger);
 
     connect(yes, &QPushButton::clicked, this, [this] {
         m_answer = Answer::Primary;

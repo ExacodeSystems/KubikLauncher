@@ -82,6 +82,8 @@ InstanceWindow::InstanceWindow(MinecraftInstance* instance, QWidget* parent) : Q
         btnHelp->setText(tr("Help"));
         horizontalLayout->addWidget(btnHelp);
         connect(btnHelp, &QPushButton::clicked, m_container, &PageContainer::help);
+        // KubikLauncher: Help opened Prism's wiki; Launch, Restart and Kill repeat the instance page's Play/Stop.
+        btnHelp->hide();
 
         auto spacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
         horizontalLayout->addSpacerItem(spacer);
@@ -108,6 +110,7 @@ InstanceWindow::InstanceWindow(MinecraftInstance* instance, QWidget* parent) : Q
         m_killButton->setShortcut(QKeySequence(tr("Ctrl+K")));
         horizontalLayout->addWidget(m_killButton);
         connect(m_killButton, &QPushButton::clicked, this, [this] { APPLICATION->kill(m_instance); });
+        m_killButton->hide();
 
         updateButtons();
 
@@ -163,8 +166,9 @@ void InstanceWindow::updateButtons()
 {
     const bool running = m_instance->isRunning();
 
-    m_launchButton->setVisible(!running);
-    m_restartButton->setVisible(running);
+    // KubikLauncher: both hidden; the instance page plays and stops it.
+    m_launchButton->setVisible(false);
+    m_restartButton->setVisible(false);
 
     m_launchButton->setEnabled(m_instance->canLaunch());
     m_restartButton->setEnabled(running && !m_restartQueued);

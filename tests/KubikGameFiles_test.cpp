@@ -142,8 +142,7 @@ class KubikGameFilesTest : public QObject {
 
     void writesTheLinesIntoAMissingFile()
     {
-        QCOMPARE(enableResourcePack({}, "file/Kubik"),
-                 QString("resourcePacks:[\"vanilla\",\"file/Kubik\"]\nincompatibleResourcePacks:[\"file/Kubik\"]\n"));
+        QCOMPARE(enableResourcePack({}, "file/Kubik"), QString("resourcePacks:[\"vanilla\",\"file/Kubik\"]\n"));
     }
 
     void putsThePackRightAfterVanillaAndKeepsEveryOtherLine()
@@ -153,12 +152,12 @@ class KubikGameFilesTest : public QObject {
             "Faithful.zip\"]\nincompatibleResourcePacks:[]\nlang:id_id\n";
         const QString after = enableResourcePack(before, "file/Kubik");
         QCOMPARE(after, QString("version:3955\nfov:0.25\nresourcePacks:[\"vanilla\",\"file/Kubik\",\"fabric\",\"file/Faithful.zip\"]\n"
-                                "incompatibleResourcePacks:[\"file/Kubik\"]\nlang:id_id\n"));
+                                "incompatibleResourcePacks:[]\nlang:id_id\n"));
     }
 
     void leavesAFileThatAlreadyHasItAlone()
     {
-        const QString on = "resourcePacks:[\"vanilla\",\"file/Kubik\"]\r\nincompatibleResourcePacks:[\"file/Kubik\"]\r\n";
+        const QString on = "resourcePacks:[\"vanilla\",\"file/Kubik\"]\r\nincompatibleResourcePacks:[]\r\n";
         QCOMPARE(enableResourcePack(on, "file/Kubik"), on);
     }
 
@@ -166,7 +165,15 @@ class KubikGameFilesTest : public QObject {
     {
         const QString before = "version:3955\r\nresourcePacks:[\"vanilla\"]\r\nincompatibleResourcePacks:[]\r\n";
         QCOMPARE(enableResourcePack(before, "file/Kubik"),
-                 QString("version:3955\r\nresourcePacks:[\"vanilla\",\"file/Kubik\"]\r\nincompatibleResourcePacks:[\"file/Kubik\"]\r\n"));
+                 QString("version:3955\r\nresourcePacks:[\"vanilla\",\"file/Kubik\"]\r\nincompatibleResourcePacks:[]\r\n"));
+    }
+
+    void takesItOffTheIncompatibleListAnEarlierBuildPutItOn()
+    {
+        // Minecraft leaves a compatible pack found on this list switched off for the session.
+        const QString before = "resourcePacks:[\"vanilla\",\"file/Kubik\"]\nincompatibleResourcePacks:[\"file/Kubik\",\"file/Old.zip\"]\n";
+        QCOMPARE(enableResourcePack(before, "file/Kubik"),
+                 QString("resourcePacks:[\"vanilla\",\"file/Kubik\"]\nincompatibleResourcePacks:[\"file/Old.zip\"]\n"));
     }
 
     void namesThePackTheWayEachVersionDoes()

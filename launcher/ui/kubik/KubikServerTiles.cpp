@@ -176,7 +176,10 @@ void KubikServerGrid::focusInEvent(QFocusEvent* event)
 
 void KubikServerGrid::relayout()
 {
-    const int available = viewport()->width() - SPACING;
+    // Measured as if the scroll bar were always there. Measured from the viewport instead, a list just tall
+    // enough to scroll loops: the bar appears, the viewport narrows, narrower tiles are shorter, the list
+    // fits, the bar goes, the tiles widen and grow taller, the bar is back, and the grid flickers forever.
+    const int available = contentsRect().width() - verticalScrollBar()->sizeHint().width() - SPACING;
     const int columns = std::max(1, available / (TILE_MIN_WIDTH + SPACING));
     const int width = std::max(TILE_MIN_WIDTH, available / columns - SPACING);
     if (width == m_tileWidth && gridSize().isValid()) {

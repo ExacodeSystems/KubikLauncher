@@ -56,6 +56,15 @@ void LauncherLoginStep::onRequestDone(QByteArray* response)
     qCDebug(authCredentials()) << *response;
     if (m_request->error() != QNetworkReply::NoError) {
         qWarning() << "Reply error:" << m_request->error();
+        // KubikLauncher: Minecraft answers 403 here, after Microsoft and Xbox have both said yes, to a
+        // launcher whose app id Mojang has not approved. Said plainly: the raw "server replied with
+        // status code 403" reads like the player's account is at fault, and it is not.
+        if (m_request->replyStatusCode() == 403) {
+            emit finished(AccountTaskState::STATE_FAILED_SOFT,
+                          tr("Minecraft hasn't approved KubikLauncher's sign-in yet, so it can't open your game account. Your "
+                             "Microsoft account is fine. Try again later."));
+            return;
+        }
         if (Net::isApplicationError(m_request->error()) && !Net::isServerError(m_request->error())) {
             emit finished(AccountTaskState::STATE_FAILED_SOFT,
                           tr("Failed to get Minecraft access token: %1").arg(m_request->errorString()));

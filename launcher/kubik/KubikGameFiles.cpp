@@ -137,44 +137,41 @@ QString enableResourcePack(const QString& optionsTxt, const QString& pack)
 {
     QStringList lines = optionsTxt.split('\n');
     bool sawPacks = false;
-    bool sawIncompatible = false;
     bool changed = false;
     for (auto& line : lines) {
         const bool crlf = line.endsWith('\r');
         const QString bare = crlf ? line.chopped(1) : line;
-        const auto edit = [&](const QString& key, bool afterVanilla) {
-            auto list = parseList(bare.mid(key.size() + 1));
-            if (!list || list->contains(pack)) {
-                return;
-            }
-            const auto vanilla = list->indexOf("vanilla");
-            list->insert(afterVanilla && vanilla >= 0 ? vanilla + 1 : (afterVanilla ? 0 : list->size()), pack);
-            line = key + ':' + writeList(*list) + (crlf ? "\r" : "");
-            changed = true;
-        };
         if (bare.startsWith("resourcePacks:")) {
             sawPacks = true;
-            edit("resourcePacks", true);
+            auto list = parseList(bare.mid(QStringLiteral("resourcePacks:").size()));
+            if (list && !list->contains(pack)) {
+                const auto vanilla = list->indexOf("vanilla");
+                list->insert(vanilla >= 0 ? vanilla + 1 : 0, pack);
+                line = "resourcePacks:" + writeList(*list) + (crlf ? "\r" : "");
+                changed = true;
+            }
         } else if (bare.startsWith("incompatibleResourcePacks:")) {
-            sawIncompatible = true;
-            edit("incompatibleResourcePacks", false);
+            // Never listed here: when a pack on this list turns out compatible, Minecraft takes it off the list
+            // and leaves it switched off for that session (an earlier build put it here, and lost a first launch).
+            auto list = parseList(bare.mid(QStringLiteral("incompatibleResourcePacks:").size()));
+            if (list && list->removeAll(pack) > 0) {
+                line = "incompatibleResourcePacks:" + writeList(*list) + (crlf ? "\r" : "");
+                changed = true;
+            }
         }
     }
-    if (sawPacks && sawIncompatible && !changed) {
+    if (sawPacks && !changed) {
         return optionsTxt;
     }
-    // Missing lines go at the end, before the file's final newline.
-    const bool trailingNewline = !lines.isEmpty() && lines.last().isEmpty();
-    if (trailingNewline) {
-        lines.removeLast();
-    }
     if (!sawPacks) {
+        // The missing line goes at the end, before the file's final newline.
+        if (!lines.isEmpty() && lines.last().isEmpty()) {
+            lines.removeLast();
+        }
         lines.append("resourcePacks:" + writeList({ "vanilla", pack }));
+        return lines.join('\n') + '\n';
     }
-    if (!sawIncompatible) {
-        lines.append("incompatibleResourcePacks:" + writeList({ pack }));
-    }
-    return lines.join('\n') + '\n';
+    return lines.join('\n');
 }
 
 QString resourcePackEntry(const QString& minecraftVersion, const QString& folder)

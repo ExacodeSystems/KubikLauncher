@@ -93,6 +93,7 @@
 #include <updater/ExternalUpdater.h>
 #include "InstanceWindow.h"
 
+#include "InstanceCopyPrefs.h"
 #include "kubik/KubikAccount.h"
 #include "kubik/KubikWindowChrome.h"
 #include "ui/GuiUtil.h"
@@ -112,6 +113,7 @@
 #include "ui/instanceview/InstanceDelegate.h"
 #include "ui/instanceview/InstanceProxyModel.h"
 #include "ui/instanceview/InstanceView.h"
+#include "ui/kubik/KubikConfirmDialog.h"
 #include "ui/kubik/KubikHomePage.h"
 #include "ui/kubik/KubikInstanceDelegate.h"
 #include "ui/kubik/KubikInstancePage.h"
@@ -979,14 +981,20 @@ void MainWindow::on_actionCopyInstance_triggered()
     if (!m_selectedInstance)
         return;
 
-    CopyInstanceDialog copyInstDlg(m_selectedInstance, this);
-    if (!copyInstDlg.exec())
+    // KubikLauncher: a copy is the whole instance under a new name. Prism's dialog (links, copy-on-write, what
+    // to leave behind) stays in the tree for upstream merges, unused.
+    bool ok = false;
+    const QString name =
+        QInputDialog::getText(this, tr("Make a copy"), tr("Name of the copy. It plays the same servers; Play asks which one to use."),
+                              QLineEdit::Normal, tr("%1 (copy)").arg(m_selectedInstance->name()), &ok)
+            .trimmed();
+    if (!ok || name.isEmpty())
         return;
 
-    auto copyTask = new InstanceCopyTask(m_selectedInstance, copyInstDlg.getChosenOptions());
-    copyTask->setName(copyInstDlg.instName());
-    copyTask->setGroup(copyInstDlg.instGroup());
-    copyTask->setIcon(copyInstDlg.iconKey());
+    auto copyTask = new InstanceCopyTask(m_selectedInstance, InstanceCopyPrefs{});
+    copyTask->setName(name);
+    copyTask->setGroup(APPLICATION->instances()->getInstanceGroup(m_selectedInstance->id()));
+    copyTask->setIcon(m_selectedInstance->iconKey());
     unique_qobject_ptr<Task> task(APPLICATION->instances()->wrapInstanceTask(copyTask));
     runModalTask(task.get());
 }
@@ -1617,19 +1625,16 @@ void MainWindow::on_actionDeleteInstance_triggered()
     }
     auto id = m_selectedInstance->id();
 
-    QString shortcutStr;
-    auto shortcuts = m_selectedInstance->shortcuts();
-    if (!shortcuts.isEmpty())
-        shortcutStr = tr(" and its %n registered shortcut(s)", "", shortcuts.size());
-    auto response = CustomMessageBox::selectable(this, tr("Confirm Deletion"),
-                                                 tr("You are about to delete \"%1\"%2.\n"
-                                                    "This may be permanent and will completely delete the instance.\n\n"
-                                                    "Are you sure?")
-                                                     .arg(m_selectedInstance->name(), shortcutStr),
-                                                 QMessageBox::Warning, QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
-                        ->exec();
-
-    if (response != QMessageBox::Yes)
+    // KubikLauncher: asked in the launcher's own dialog, with the destructive answer marked as such (Prism's
+    // Yes/No box put the accent on No).
+    QString body =
+        tr("Its worlds, mods and settings go with it. Servers that played in it get a new instance the next "
+           "time you press Play.");
+    if (const auto shortcuts = m_selectedInstance->shortcuts(); !shortcuts.isEmpty()) {
+        body += " " + tr("Its %n desktop shortcut(s) are removed too.", "", shortcuts.size());
+    }
+    if (KubikConfirmDialog::ask(this, tr("Delete %1?").arg(m_selectedInstance->name()), body, tr("Delete"), tr("Cancel"), true) !=
+        KubikConfirmDialog::Answer::Primary)
         return;
 
     if (!checkLinkedInstances(id, this, tr("Deleting")))

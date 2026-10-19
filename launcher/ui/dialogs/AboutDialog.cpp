@@ -121,6 +121,14 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
 
     ui->copyLabel->setText(BuildConfig.LAUNCHER_COPYRIGHT);
 
+    // KubikLauncher: what this launcher is (the .ui still says what Prism is), and Close as the default
+    // button, not About Qt.
+    ui->aboutLabel->setText(
+        tr("Play your kubik.gg servers: KubikLauncher installs the right Minecraft and mods for each one, and joins it for you."));
+    ui->closeButton->setDefault(true);
+    ui->aboutQt->setAutoDefault(false);
+    ui->aboutQt->setProperty("kubikRole", "quiet");
+
     connect(ui->closeButton, &QPushButton::clicked, this, &AboutDialog::close);
 
     connect(ui->aboutQt, &QPushButton::clicked, APPLICATION, &QApplication::aboutQt);

@@ -622,6 +622,40 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <source>New name:</source>
         <translation>Nama baru:</translation>
     </message>
+    <message>
+        <source>Make a copy</source>
+        <translation>Bikin salinan</translation>
+    </message>
+    <message>
+        <source>Name of the copy. It plays the same servers; Play asks which one to use.</source>
+        <translation>Nama salinannya. Salinan ini bisa main di server yang sama; tombol Main bakal nanya mau pakai yang mana.</translation>
+    </message>
+    <message>
+        <source>%1 (copy)</source>
+        <translation>%1 (salinan)</translation>
+    </message>
+    <message>
+        <source>Its worlds, mods and settings go with it. Servers that played in it get a new instance the next time you press Play.</source>
+        <translation>World, mod, dan pengaturannya ikut terhapus. Server yang pernah main di sini bakal dapat instance baru waktu kamu tekan Main lagi.</translation>
+    </message>
+    <message numerus="yes">
+        <source>Its %n desktop shortcut(s) are removed too.</source>
+        <translation>
+            <numerusform>%n shortcut desktop-nya juga dihapus.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Delete %1?</source>
+        <translation>Hapus %1?</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Hapus</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Batal</translation>
+    </message>
 </context>
 <context>
     <name>ModrinthPage</name>
@@ -1784,6 +1818,20 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
     <message>
         <source>KubikLauncher puts this in for the server you join and takes it out for a server that does not need it.</source>
         <translation>KubikLauncher masang ini buat server yang kamu join, dan nyabut lagi buat server yang nggak butuh.</translation>
+    </message>
+</context>
+<context>
+    <name>LauncherLoginStep</name>
+    <message>
+        <source>Minecraft hasn&apos;t approved KubikLauncher&apos;s sign-in yet, so it can&apos;t open your game account. Your Microsoft account is fine. Try again later.</source>
+        <translation>Minecraft belum menyetujui login lewat KubikLauncher, jadi akun game kamu belum bisa dibuka. Akun Microsoft kamu aman. Coba lagi nanti.</translation>
+    </message>
+</context>
+<context>
+    <name>AboutDialog</name>
+    <message>
+        <source>Play your kubik.gg servers: KubikLauncher installs the right Minecraft and mods for each one, and joins it for you.</source>
+        <translation>Main di server kubik.gg kamu: KubikLauncher masangin Minecraft dan mod yang pas buat tiap server, lalu join-in buat kamu.</translation>
     </message>
 </context>
 </TS>

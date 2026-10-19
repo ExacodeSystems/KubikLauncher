@@ -35,7 +35,9 @@
 #include "InstanceList.h"
 #include "kubik/KubikAccount.h"
 #include "translations/TranslationsModel.h"
+#include "ui/InstanceWindow.h"
 #include "ui/instanceview/InstanceView.h"
+#include "ui/kubik/KubikAccounts.h"
 #include "ui/kubik/KubikHomePage.h"
 #include "ui/kubik/KubikInstanceDelegate.h"
 #include "ui/kubik/KubikInstancePage.h"
@@ -84,6 +86,8 @@ struct Step {
     // Hold the save until this is true (checked every tick), for at most maxTicks ticks.
     std::function<bool(QMainWindow*)> until = {};
     int maxTicks = 0;
+    // Save this window instead of the main one (a window the step opened), then close it.
+    std::function<QWidget*(QMainWindow*)> target = {};
 };
 
 /** Open the server called `name` on its page (the play walk). */
@@ -249,7 +253,58 @@ void startIfRequested()
           } },
         { "Shared-server", [](QMainWindow* window) { openServer(window, shareServer); } },
     };
-    static const QList<Step>& steps = !KubikAccount::get()->isSignedIn() ? signedOut : playServer.isEmpty() ? signedIn : playWalk;
+    // KUBIKLAUNCHER_SNAPSHOT_DIALOGS=1 (on a data dir that already has an instance): every window a player can
+    // open from an instance and from the profile card, each saved and then dismissed without doing anything.
+    const auto action = [](KubikInstancePage::Action act) {
+        return [act](QMainWindow* window) {
+            if (auto* page = window->findChild<KubikInstancePage*>()) {
+                emit page->actionRequested(page->instanceId(), act);
+            }
+        };
+    };
+    static const QList<Step> dialogsWalk = {
+        { "Instance",
+          [](QMainWindow* window) {
+              const QString id = firstInstanceId(window);
+              if (auto* home = window->findChild<KubikHomePage*>(); home && !id.isEmpty()) {
+                  emit home->instanceOpened(id);
+              }
+          } },
+        { "Dialog-rename", action(KubikInstancePage::Action::Rename), true },
+        { "Dialog-icon", action(KubikInstancePage::Action::ChangeIcon), true },
+        { "Dialog-copy", action(KubikInstancePage::Action::Copy), true },
+        { "Dialog-delete", action(KubikInstancePage::Action::Delete), true },
+        { "Dialog-export-zip", action(KubikInstancePage::Action::ExportZip), true },
+        { "Dialog-export-mrpack", action(KubikInstancePage::Action::ExportModrinth), true },
+        { "Dialog-shortcut", action(KubikInstancePage::Action::CreateShortcut), true },
+        { "Dialog-group", action(KubikInstancePage::Action::ChangeGroup), true },
+        { "Dialog-offline-name", [](QMainWindow* window) { KubikAccounts::addOffline(window); }, true },
+        { "Dialog-about", [](QMainWindow* window) { QMetaObject::invokeMethod(window, "on_actionAbout_triggered"); }, true },
+        { "Instance-window-open",
+          [](QMainWindow* window) {
+              if (auto* page = window->findChild<KubikInstancePage*>()) {
+                  emit page->manageRequested(page->instanceId(), "settings");
+              }
+          } },
+        { "Instance-window",
+          {},
+          false,
+          {},
+          0,
+          [](QMainWindow*) -> QWidget* {
+              for (auto* widget : QApplication::topLevelWidgets()) {
+                  if (qobject_cast<InstanceWindow*>(widget) && widget->isVisible()) {
+                      return widget;
+                  }
+              }
+              return nullptr;
+          } },
+    };
+    static const bool dialogs = qEnvironmentVariable("KUBIKLAUNCHER_SNAPSHOT_DIALOGS") == QLatin1String("1");
+    static const QList<Step>& steps = !KubikAccount::get()->isSignedIn() ? signedOut
+                                      : dialogs                          ? dialogsWalk
+                                      : playServer.isEmpty()             ? signedIn
+                                                                         : playWalk;
 
     auto* timer = new QTimer(qApp);
     timer->setInterval(2500);
@@ -300,7 +355,11 @@ void startIfRequested()
                 return;
             }
             waited = 0;
-            save(window, dir, ++shot, current.name);
+            QWidget* what = current.target ? current.target(window) : nullptr;
+            save(what ? what : window, dir, ++shot, current.name);
+            if (what && what != window) {
+                what->close();
+            }
             pendingSave = false;
             ++step;
             return;

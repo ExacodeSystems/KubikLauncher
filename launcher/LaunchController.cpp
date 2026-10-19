@@ -36,6 +36,7 @@
 
 #include "LaunchController.h"
 #include "Application.h"
+#include "kubik/KubikDev.h"
 #include "launch/steps/PrintServers.h"
 #include "minecraft/auth/AccountData.h"
 #include "minecraft/auth/AccountList.h"
@@ -93,7 +94,8 @@ void LaunchController::decideAccount()
         m_accountToUse = accounts->at(instanceAccountIndex);
     }
 
-    if (!accounts->anyAccountIsValid()) {
+    // KubikLauncher: a Debug build's development switch lets an offline profile play on its own (KubikDev.h).
+    if (!accounts->anyAccountIsValid() && !Kubik::devOfflinePlays(m_accountToUse)) {
         // Tell the user they need to log in at least one account in order to play.
         auto reply = CustomMessageBox::selectable(m_parentWidget, tr("No Accounts"),
                                                   tr("In order to play Minecraft, you must have at least one Microsoft "
@@ -151,6 +153,14 @@ LaunchDecision LaunchController::decideLaunchMode()
         }
     }
 
+    if (!accountToCheck && Kubik::devOfflinePlays(m_accountToUse)) {
+        // No Microsoft account to vouch for it, but a Debug build's development switch is on (KubikDev.h).
+        // Normal mode, as Prism gives an offline profile whose Microsoft account is online: the launch still
+        // downloads the game's libraries and assets (offline mode skips that and refuses a fresh instance),
+        // and the session stays the offline profile's own.
+        m_actualLaunchMode = LaunchMode::Normal;
+        return LaunchDecision::Continue;
+    }
     if (!accountToCheck) {
         m_actualLaunchMode = LaunchMode::Demo;
         return LaunchDecision::Continue;

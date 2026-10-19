@@ -109,4 +109,14 @@
         </translation>
     </message>
 </context>
+<context>
+    <name>MainWindow</name>
+    <message numerus="yes">
+        <source>Its %n desktop shortcut(s) are removed too.</source>
+        <translation>
+            <numerusform>Its desktop shortcut is removed too.</numerusform>
+            <numerusform>Its %n desktop shortcuts are removed too.</numerusform>
+        </translation>
+    </message>
+</context>
 </TS>
