@@ -5,6 +5,7 @@
 #include "McResolver.h"
 #include "Result.h"
 #include "ServerPingTask.h"
+#include "kubik/KubikGameText.h"
 
 namespace {
 unsigned getOnlinePlayers(const QJsonObject& data)
@@ -38,6 +39,7 @@ void ServerPingTask::executeTask()
             if (const auto comma = favicon.indexOf(','); favicon.startsWith("data:image/png;base64,") && comma > 0) {
                 m_outputFavicon = QByteArray::fromBase64(favicon.mid(comma + 1).toLatin1());
             }
+            m_outputMotd = Kubik::plainMotd(data.value("description"));
             qDebug() << "Online players:" << m_outputOnlinePlayers;
             emitSucceeded();
         });

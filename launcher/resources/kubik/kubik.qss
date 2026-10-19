@@ -566,10 +566,65 @@ QPushButton[kubikRole="row"]:hover {
     font-weight: 700;
 }
 
-/* The server page's "How you join" card: a raised block, no frame. */
-#kubikJoinCard {
+/* The server page's address: a card of its own, edged in the accent, the one thing a player may type. */
+#kubikAddressCard {
     background-color: @void.panel@;
+    border: 1px solid @block@;
+    border-left: 3px solid @grass@;
     border-radius: 8px;
+}
+
+#kubikAddressLabel {
+    color: @bone.faint@;
+    font-family: "@font.display@";
+    font-size: 12px;
+    font-weight: 600;
+}
+
+#kubikAddress {
+    color: @bone@;
+    font-family: "@font.mono@";
+    font-size: 22px;
+    font-weight: 600;
+}
+
+#kubikAddressPort {
+    color: @bone.muted@;
+    font-family: "@font.mono@";
+    font-size: 14px;
+}
+
+QPushButton#kubikAddressCopy {
+    color: @bone@;
+    background-color: @block@;
+    border-radius: 6px;
+    padding: 8px 14px;
+}
+
+QPushButton#kubikAddressCopy:hover {
+    background-color: @block.edge@;
+}
+
+/* "How to join": a raised card a step, its picture on top, a numbered block beside its title. */
+#kubikJoinStep {
+    background-color: @void.panel@;
+    border-radius: 10px;
+}
+
+#kubikStepNumber {
+    color: @void@;
+    background-color: @grass@;
+    border-radius: 6px;
+    font-family: "@font.display@";
+    font-size: 14px;
+    font-weight: 700;
+}
+
+#kubikStepTitle {
+    color: @bone@;
+    font-family: "@font.display@";
+    font-size: 15px;
+    font-weight: 600;
 }
 
 /* Settings › Profiles: one raised row per Minecraft profile. */

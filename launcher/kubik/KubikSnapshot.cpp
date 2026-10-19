@@ -26,6 +26,7 @@
 #include <QMainWindow>
 #include <QMenu>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QTimer>
 #include <QWizard>
 
@@ -41,6 +42,7 @@
 #include "ui/kubik/KubikHomePage.h"
 #include "ui/kubik/KubikInstanceDelegate.h"
 #include "ui/kubik/KubikInstancePage.h"
+#include "ui/kubik/KubikJoinGuide.h"
 #include "ui/kubik/KubikProfileCard.h"
 #include "ui/kubik/KubikServerPage.h"
 #include "ui/kubik/KubikServerTiles.h"
@@ -89,6 +91,26 @@ struct Step {
     // Save this window instead of the main one (a window the step opened), then close it.
     std::function<QWidget*(QMainWindow*)> target = {};
 };
+
+/** Scroll the page holding `widget` until the widget's top is in view. */
+void scrollTo(QWidget* widget)
+{
+    for (QWidget* parent = widget ? widget->parentWidget() : nullptr; parent; parent = parent->parentWidget()) {
+        if (auto* scroll = qobject_cast<QScrollArea*>(parent)) {
+            scroll->ensureWidgetVisible(widget, 0, 40);
+            return;
+        }
+    }
+}
+
+/** The server page's "How to join" on step `index`, scrolled into view. */
+void showGuideStep(QMainWindow* window, int index)
+{
+    if (auto* guide = window->findChild<KubikJoinGuide*>()) {
+        guide->showStep(index);
+        scrollTo(guide);
+    }
+}
 
 /** Open the server called `name` on its page (the play walk). */
 void openServer(QMainWindow* window, const QString& name)
@@ -196,6 +218,11 @@ void startIfRequested()
     static const QList<Step> playWalk = {
         { "Servers", {} },
         { "Play-server", [](QMainWindow* window) { openServer(window, playServer); } },
+        // Down to "How to join", and each of its steps.
+        { "Play-guide", [](QMainWindow* window) { scrollTo(window->findChild<KubikJoinGuide*>()); } },
+        { "Play-guide-2", [](QMainWindow* window) { showGuideStep(window, 1); } },
+        { "Play-guide-3", [](QMainWindow* window) { showGuideStep(window, 2); } },
+        { "Play-guide-4", [](QMainWindow* window) { showGuideStep(window, 3); } },
         { "Play-started",
           [](QMainWindow* window) {
               if (auto* page = window->findChild<KubikServerPage*>()) {

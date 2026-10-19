@@ -39,6 +39,8 @@ struct KubikServerLive {
     int online = -1;
     int max = -1;
     QImage favicon;
+    /** Its message of the day, plain text, up to two lines. */
+    QString motd;
 };
 
 class KubikServerModel : public QAbstractListModel {

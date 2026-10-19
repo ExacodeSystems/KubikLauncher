@@ -32,6 +32,7 @@ class QPushButton;
 class QSortFilterProxyModel;
 class QStackedWidget;
 class QTimer;
+struct KubikServerLive;
 
 namespace Kubik {
 struct Server;
@@ -58,6 +59,8 @@ class KubikServersPage : public QWidget {
 
     /** The server as last fetched, or nullptr. */
     const Kubik::Server* server(const QString& id) const;
+    /** What the last ping of that server said, or null. */
+    const KubikServerLive* live(const QString& id) const;
     void refresh();
 
    signals:

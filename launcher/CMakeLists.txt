@@ -887,6 +887,8 @@ SET(LAUNCHER_SOURCES
     kubik/KubikDev.h
     kubik/KubikGameFiles.cpp
     kubik/KubikGameFiles.h
+    kubik/KubikGameText.cpp
+    kubik/KubikGameText.h
     kubik/KubikInstanceTask.cpp
     kubik/KubikInstanceTask.h
     kubik/KubikModels.cpp
@@ -924,6 +926,10 @@ SET(LAUNCHER_SOURCES
     ui/kubik/KubikInstancePage.h
     ui/kubik/KubikInstancePicker.cpp
     ui/kubik/KubikInstancePicker.h
+    ui/kubik/KubikJoinGuide.cpp
+    ui/kubik/KubikJoinGuide.h
+    ui/kubik/KubikJoinShots.cpp
+    ui/kubik/KubikJoinShots.h
     ui/kubik/KubikLanguagePicker.cpp
     ui/kubik/KubikLanguagePicker.h
     ui/kubik/KubikProfileCard.cpp

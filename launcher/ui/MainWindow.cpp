@@ -1955,7 +1955,7 @@ void MainWindow::showServerPage(const QString& serverId, bool play)
     if (!server) {
         return;
     }
-    m_serverPage->setServer(*server);
+    m_serverPage->setServer(*server, m_servers->live(serverId));
     m_pages->setCurrentWidget(m_serverPage);
     if (play) {
         m_serverPage->play();

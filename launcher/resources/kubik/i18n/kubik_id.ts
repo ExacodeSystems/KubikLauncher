@@ -1022,30 +1022,6 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <translation>Mods</translation>
     </message>
     <message>
-        <source>How you join %1</source>
-        <translation>Cara join ke %1</translation>
-    </message>
-    <message>
-        <source>How joining works</source>
-        <translation>Cara join ke server</translation>
-    </message>
-    <message>
-        <source>1.  Minecraft opens and connects to %1 by itself.</source>
-        <translation>1.  Minecraft kebuka dan langsung nyambung ke %1 sendiri.</translation>
-    </message>
-    <message>
-        <source>2.  If you leave or get disconnected, open Multiplayer. %1 is at the top of the list.</source>
-        <translation>2.  Kalau kamu keluar atau koneksinya putus, buka Multiplayer. %1 ada di paling atas daftar.</translation>
-    </message>
-    <message>
-        <source>3.  Joining from another launcher? Use the address %1 with %2 and the mods listed below.</source>
-        <translation>3.  Mau join dari launcher lain? Pakai alamat %1 dengan %2 dan mods di bawah ini.</translation>
-    </message>
-    <message>
-        <source>3.  Joining from another launcher? Use the address %1 with %2.</source>
-        <translation>3.  Mau join dari launcher lain? Pakai alamat %1 dengan %2.</translation>
-    </message>
-    <message>
         <source>Playing as %1, an offline profile. It can only join servers whose owner turned on offline access.</source>
         <translation>Kamu main sebagai %1, profil offline. Profil ini cuma bisa join ke server yang pemiliknya udah nyalain akses offline.</translation>
     </message>
@@ -1066,10 +1042,6 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <translation>Cara join</translation>
     </message>
     <message>
-        <source>Got it</source>
-        <translation>Oke, paham</translation>
-    </message>
-    <message>
         <source>Hide details</source>
         <translation>Sembunyiin detail</translation>
     </message>
@@ -1080,6 +1052,18 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
     <message>
         <source>Copy</source>
         <translation>Salin</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Alamat server</translation>
+    </message>
+    <message>
+        <source>Server address and port</source>
+        <translation>Alamat dan port server</translation>
+    </message>
+    <message>
+        <source>Port %1</source>
+        <translation>Port %1</translation>
     </message>
 </context>
 <context>
@@ -1832,6 +1816,81 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
     <message>
         <source>Play your kubik.gg servers: KubikLauncher installs the right Minecraft and mods for each one, and joins it for you.</source>
         <translation>Main di server kubik.gg kamu: KubikLauncher masangin Minecraft dan mod yang pas buat tiap server, lalu join-in buat kamu.</translation>
+    </message>
+</context>
+<context>
+    <name>KubikJoinGuide</name>
+    <message>
+        <source>Got it</source>
+        <translation>Oke, paham</translation>
+    </message>
+    <message>
+        <source>← Back</source>
+        <translation>← Kembali</translation>
+    </message>
+    <message>
+        <source>Next step →</source>
+        <translation>Lanjut →</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Main</translation>
+    </message>
+    <message>
+        <source>How to join %1</source>
+        <translation>Cara join ke %1</translation>
+    </message>
+    <message>
+        <source>The pictures show the buttons in %1, as your Minecraft shows them.</source>
+        <translation>Tombol di gambar pakai bahasa %1, sama kayak di Minecraft kamu.</translation>
+    </message>
+    <message>
+        <source>Indonesian</source>
+        <translation>Indonesia</translation>
+    </message>
+    <message>
+        <source>English</source>
+        <translation>Inggris</translation>
+    </message>
+    <message>
+        <source>Press Play</source>
+        <translation>Tekan Main</translation>
+    </message>
+    <message>
+        <source>KubikLauncher installs %1 and the server&apos;s mods. Minecraft then opens and connects to %2 by itself.</source>
+        <translation>KubikLauncher masangin %1 dan mod server-nya. Habis itu Minecraft kebuka dan langsung join ke %2 sendiri.</translation>
+    </message>
+    <message>
+        <source>KubikLauncher installs %1. Minecraft then opens and connects to %2 by itself.</source>
+        <translation>KubikLauncher masangin %1. Habis itu Minecraft kebuka dan langsung join ke %2 sendiri.</translation>
+    </message>
+    <message>
+        <source>Coming back? Press %1</source>
+        <translation>Mau balik lagi? Tekan %1</translation>
+    </message>
+    <message>
+        <source>Left the server or got disconnected? %1 is on Minecraft&apos;s title screen, under %2.</source>
+        <translation>Keluar dari server atau koneksi putus? %1 ada di layar awal Minecraft, di bawah %2.</translation>
+    </message>
+    <message>
+        <source>Pick %1, then %2</source>
+        <translation>Pilih %1, lalu %2</translation>
+    </message>
+    <message>
+        <source>Each Play puts %1 at the top of the list, so it is always the first server you see.</source>
+        <translation>Tiap kali kamu tekan Main, %1 ditaruh paling atas, jadi selalu jadi server pertama yang kamu lihat.</translation>
+    </message>
+    <message>
+        <source>From another launcher</source>
+        <translation>Dari launcher lain</translation>
+    </message>
+    <message>
+        <source>Press %1, type %2 as the %3, then %4. Play it with %5 and the mods this page lists.</source>
+        <translation>Tekan %1, isi %3 dengan %2, lalu %4. Mainnya pakai %5 dan mod yang ada di halaman ini.</translation>
+    </message>
+    <message>
+        <source>Press %1, type %2 as the %3, then %4. Play it with %5.</source>
+        <translation>Tekan %1, isi %3 dengan %2, lalu %4. Mainnya pakai %5.</translation>
     </message>
 </context>
 </TS>

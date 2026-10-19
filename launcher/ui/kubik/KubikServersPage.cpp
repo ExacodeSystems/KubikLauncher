@@ -311,6 +311,11 @@ const Kubik::Server* KubikServersPage::server(const QString& id) const
     return m_model->serverById(id);
 }
 
+const KubikServerLive* KubikServersPage::live(const QString& id) const
+{
+    return m_model->live(id);
+}
+
 void KubikServersPage::refresh()
 {
     auto* account = KubikAccount::get();
@@ -419,6 +424,7 @@ void KubikServersPage::pingServers()
             KubikServerLive live;
             live.online = task->m_outputOnlinePlayers;
             live.max = task->m_outputMaxPlayers;
+            live.motd = task->m_outputMotd;
             if (!task->m_outputFavicon.isEmpty()) {
                 live.favicon.loadFromData(task->m_outputFavicon, "PNG");
             }

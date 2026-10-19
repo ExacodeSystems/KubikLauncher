@@ -21,6 +21,7 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QEvent>
+#include <QFile>
 #include <QFrame>
 #include <QGuiApplication>
 #include <QHBoxLayout>
@@ -31,22 +32,27 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
 
 #include "Application.h"
 #include "BaseInstance.h"
+#include "FileSystem.h"
 #include "icons/IconList.h"
 #include "kubik/KubikAccount.h"
 #include "kubik/KubikApi.h"
 #include "kubik/KubikBrand.h"
+#include "kubik/KubikGameText.h"
 #include "kubik/KubikPlay.h"
 #include "kubik/KubikProfiles.h"
 #include "kubik/KubikWindowChrome.h"
+#include "minecraft/MinecraftInstance.h"
 #include "minecraft/auth/AccountList.h"
 #include "settings/SettingsObject.h"
 #include "ui/kubik/KubikAccounts.h"
 #include "ui/kubik/KubikInstancePicker.h"
+#include "ui/kubik/KubikJoinGuide.h"
 #include "ui/kubik/KubikServerTiles.h"
 
 namespace {
@@ -108,31 +114,47 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     m_status = new QLabel(content);
     m_status->setObjectName("kubikPageSubtitle");
 
-    m_address = new QLabel(content);
-    m_address->setObjectName("kubikPageBody");
+    // ── The address: a card of its own, the one thing a player may have to type ──
+    m_addressCard = new QFrame(content);
+    m_addressCard->setObjectName("kubikAddressCard");
+    m_addressCard->setMaximumWidth(560);
+    m_addressLabel = new QLabel(m_addressCard);
+    m_addressLabel->setObjectName("kubikAddressLabel");
+    m_address = new QLabel(m_addressCard);
+    m_address->setObjectName("kubikAddress");
+    m_address->setFont(QFont(KubikBrand::monoFamily()));
+    m_address->setTextFormat(Qt::PlainText);
     m_address->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    m_copy = new QPushButton(content);
-    m_copy->setProperty("kubikRole", "quiet");
+    m_address->setCursor(Qt::IBeamCursor);
+    m_port = new QLabel(m_addressCard);
+    m_port->setObjectName("kubikAddressPort");
+    m_port->setFont(QFont(KubikBrand::monoFamily()));
+    m_port->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_copy = new QPushButton(m_addressCard);
+    m_copy->setObjectName("kubikAddressCopy");
     m_copy->setIcon(QIcon::fromTheme("copy"));
     m_copy->setCursor(Qt::PointingHandCursor);
     connect(m_copy, &QPushButton::clicked, this, [this] {
-        QString address = m_server.address;
-        if (m_server.edition == "bedrock" && m_server.port > 0) {
-            address += ":" + QString::number(m_server.port);
-        }
-        QGuiApplication::clipboard()->setText(address);
+        // The address alone: Bedrock's Add Server asks for the port in a field of its own.
+        QGuiApplication::clipboard()->setText(m_server.address);
         m_copy->setText(tr("Copied"));
+        QTimer::singleShot(2000, m_copy, [this] { m_copy->setText(tr("Copy")); });
     });
+    auto* addressWords = new QVBoxLayout();
+    addressWords->setSpacing(2);
+    addressWords->addWidget(m_addressLabel);
+    addressWords->addWidget(m_address);
+    addressWords->addWidget(m_port);
+    auto* addressLayout = new QHBoxLayout(m_addressCard);
+    addressLayout->setContentsMargins(18, 12, 12, 12);
+    addressLayout->setSpacing(12);
+    addressLayout->addLayout(addressWords, 1);
+    addressLayout->addWidget(m_copy, 0, Qt::AlignVCenter);
+
     m_open = new QPushButton(content);
-    m_open->setProperty("kubikRole", "quiet");
+    m_open->setProperty("kubikRole", "link");
     m_open->setCursor(Qt::PointingHandCursor);
     connect(m_open, &QPushButton::clicked, this, [this] { QDesktopServices::openUrl(QUrl(m_server.dashboardUrl)); });
-    auto* addressRow = new QHBoxLayout();
-    addressRow->setSpacing(6);
-    addressRow->addWidget(m_address);
-    addressRow->addWidget(m_copy);
-    addressRow->addWidget(m_open);
-    addressRow->addStretch();
 
     m_playButton = new QPushButton(content);
     m_playButton->setObjectName("kubikHeroPlay");
@@ -157,8 +179,10 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     });
     auto* actions = new QHBoxLayout();
     actions->setSpacing(10);
+    actions->setSpacing(18);
     actions->addWidget(m_playButton);
     actions->addWidget(m_howToJoin);
+    actions->addWidget(m_open);
     actions->addStretch();
 
     m_progressText = bodyText(content, "kubikPageSubtitle");
@@ -204,34 +228,23 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
         }
     });
 
-    // ── How joining works: open by itself on the first game, a link after that ──
-    m_joinCard = new QFrame(content);
-    m_joinCard->setObjectName("kubikJoinCard");
-    m_joinTitle = sectionTitle(m_joinCard);
-    m_joinSteps = bodyText(m_joinCard);
-    m_joinDismiss = new QPushButton(m_joinCard);
-    m_joinDismiss->setProperty("kubikRole", "quiet");
-    m_joinDismiss->setCursor(Qt::PointingHandCursor);
-    connect(m_joinDismiss, &QPushButton::clicked, this, [this] {
+    // ── How to join, in pictures: open until "Got it", a link next to Play after that ──
+    m_joinGuide = new KubikJoinGuide(content);
+    connect(m_joinGuide, &KubikJoinGuide::dismissed, this, [this] {
         APPLICATION->settings()->set("KubikJoinTipSeen", true);
         m_joinOpen = false;
         updateJoinCard();
     });
-    auto* joinLayout = new QVBoxLayout(m_joinCard);
-    joinLayout->setContentsMargins(18, 16, 18, 12);
-    joinLayout->setSpacing(8);
-    joinLayout->addWidget(m_joinTitle);
-    joinLayout->addWidget(m_joinSteps);
-    joinLayout->addWidget(m_joinDismiss, 0, Qt::AlignRight);
 
     auto* words = new QVBoxLayout();
     words->setSpacing(6);
     words->addStretch();
     words->addWidget(m_name);
     words->addWidget(m_about);
-    words->addLayout(addressRow);
     words->addWidget(m_status);
-    words->addSpacing(14);
+    words->addSpacing(10);
+    words->addWidget(m_addressCard);
+    words->addSpacing(12);
     words->addLayout(actions);
     words->addWidget(m_progressText);
     words->addWidget(m_progress);
@@ -290,7 +303,8 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     column->addSpacing(10);
     column->addWidget(m_notice);
     column->addWidget(m_noticeAction, 0, Qt::AlignLeft);
-    column->addWidget(m_joinCard);
+    column->addSpacing(8);
+    column->addWidget(m_joinGuide);
     column->addSpacing(18);
     column->addWidget(m_instanceTitle);
     column->addWidget(m_instanceLine);
@@ -317,18 +331,24 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     retranslate();
 }
 
-void KubikServerPage::setServer(const Kubik::Server& server)
+void KubikServerPage::setServer(const Kubik::Server& server, const KubikServerLive* live)
 {
     const bool sameServer = server.id == m_server.id;
     m_server = server;
+    if (live) {
+        m_live = *live;
+    } else if (!sameServer) {
+        m_live.reset();
+    }
     if (!sameServer) {
         if (m_play) {
             m_play->cancel();
         }
         m_pack.reset();
         m_packError.clear();
-        m_copy->setText(QString());
-        m_joinOpen = false;
+        m_copy->setText(tr("Copy"));
+        m_joinOpen = !APPLICATION->settings()->get("KubikJoinTipSeen").toBool();
+        m_joinGuide->showStep(inGame() ? KubikJoinGuide::COMING_BACK : 0);
         m_details->clear();
         m_detailsOpen = false;
     }
@@ -344,19 +364,20 @@ void KubikServerPage::setServer(const Kubik::Server& server)
         QPainterPath shape;
         shape.addRoundedRect(QRectF(0, 0, ART_SIDE, ART_SIDE), 6, 6);
         painter.setClipPath(shape);
-        KubikServerDelegate::paintArt(&painter, QRect(0, 0, ART_SIDE, ART_SIDE), server, nullptr, false);
+        KubikServerDelegate::paintArt(&painter, QRect(0, 0, ART_SIDE, ART_SIDE), server, m_live ? &*m_live : nullptr, false);
     }
     m_art->setPixmap(art);
     m_name->setText(server.name);
     m_about->setText(KubikServerDelegate::describe(server));
-    QString address = server.address.isEmpty() ? tr("No address yet") : server.address;
-    if (server.edition == "bedrock" && server.port > 0) {
-        address += ":" + QString::number(server.port);
-    }
-    m_address->setText(address);
+    m_address->setText(server.address.isEmpty() ? tr("No address yet") : server.address);
     m_copy->setVisible(!server.address.isEmpty());
+    const bool bedrock = server.edition == "bedrock" && server.port > 0;
+    m_addressLabel->setText(bedrock ? tr("Server address and port") : tr("Server address"));
+    m_port->setVisible(bedrock);
+    m_port->setText(tr("Port %1").arg(server.port));
     m_status->setText(QString("<span style=\"color:%1\">●</span>&nbsp;%2")
-                          .arg(KubikServerDelegate::statusColour(server).name(), KubikServerDelegate::statusText(server).toHtmlEscaped()));
+                          .arg(KubikServerDelegate::statusColour(server).name(),
+                               KubikServerDelegate::statusLine(server, m_live ? &*m_live : nullptr).toHtmlEscaped()));
 
     showNotice({});
     if (server.unplayable == "bedrock") {
@@ -502,6 +523,7 @@ void KubikServerPage::watchInstance()
         m_runningWatch = connect(instance, &BaseInstance::runningStatusChanged, this, [this](bool running) {
             if (running && !APPLICATION->settings()->get("KubikJoinTipSeen").toBool() && inGame()) {
                 m_joinOpen = true;
+                m_joinGuide->showStep(KubikJoinGuide::COMING_BACK);
             }
             updatePlayState();
             updateJoinCard();
@@ -509,25 +531,25 @@ void KubikServerPage::watchInstance()
     }
 }
 
+QString KubikServerPage::gameLanguage() const
+{
+    // An instance not made yet is a game on Minecraft's default language.
+    auto* instance = dynamic_cast<MinecraftInstance*>(currentInstance());
+    if (!instance) {
+        return Kubik::gameLanguage({});
+    }
+    QFile options(FS::PathCombine(instance->gameRoot(), "options.txt"));
+    return Kubik::gameLanguage(options.open(QIODevice::ReadOnly) ? QString::fromUtf8(options.readAll()) : QString());
+}
+
 void KubikServerPage::updateJoinCard()
 {
     const bool playable = m_server.profile.has_value() && !m_server.locked;
     m_howToJoin->setVisible(playable && !m_joinOpen);
-    m_joinCard->setVisible(playable && m_joinOpen);
-    if (!playable) {
-        return;
+    m_joinGuide->setVisible(playable && m_joinOpen);
+    if (playable && m_joinOpen) {
+        m_joinGuide->setServer(m_server, m_live, gameLanguage());
     }
-    const bool modded = !m_server.profile->loader.isEmpty() || m_server.profile->isModpack();
-    const QString address = m_server.address;
-    m_joinTitle->setText(inGame() ? tr("How you join %1").arg(m_server.name) : tr("How joining works"));
-    const QStringList steps = {
-        tr("1.  Minecraft opens and connects to %1 by itself.").arg(address),
-        tr("2.  If you leave or get disconnected, open Multiplayer. %1 is at the top of the list.").arg(m_server.name),
-        (modded ? tr("3.  Joining from another launcher? Use the address %1 with %2 and the mods listed below.")
-                : tr("3.  Joining from another launcher? Use the address %1 with %2."))
-            .arg(address, m_server.profile->label),
-    };
-    m_joinSteps->setText(steps.join("\n\n"));
 }
 
 void KubikServerPage::updateDetails()
@@ -653,6 +675,8 @@ void KubikServerPage::play(bool newInstance)
         watchInstance();
         if (!APPLICATION->settings()->get("KubikJoinTipSeen").toBool()) {
             m_joinOpen = true;
+            // Minecraft is opening and joining: what is left to know is how to come back.
+            m_joinGuide->showStep(KubikJoinGuide::COMING_BACK);
         }
         updatePlayState();
         updateJoinCard();
@@ -696,12 +720,12 @@ void KubikServerPage::retranslate()
     m_back->setText(tr("← Your servers"));
     m_open->setText(tr("Open on kubik.gg"));
     m_copy->setToolTip(tr("Copy the address"));
+    m_copy->setText(tr("Copy"));
     m_instanceTitle->setText(tr("Instance"));
     m_instanceOpen->setText(tr("Open instance"));
     m_instanceChange->setText(tr("Change"));
     m_modsTitle->setText(tr("Mods"));
     m_howToJoin->setText(tr("How to join"));
-    m_joinDismiss->setText(tr("Got it"));
     if (!m_server.id.isEmpty()) {
         setServer(m_server);
     }

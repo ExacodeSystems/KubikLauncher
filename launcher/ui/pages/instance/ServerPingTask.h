@@ -14,6 +14,8 @@ class ServerPingTask : public Task {
     // KubikLauncher's server tiles: the player limit, and the server's icon (PNG bytes; empty if it has none).
     int m_outputMaxPlayers = -1;
     QByteArray m_outputFavicon;
+    // And its message of the day, as plain text, for the server page's join pictures.
+    QString m_outputMotd;
 
    private:
     QString m_domain;

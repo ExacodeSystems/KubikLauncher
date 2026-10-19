@@ -27,8 +27,10 @@
 #include <optional>
 
 #include "kubik/KubikModels.h"
+#include "ui/kubik/KubikServerTiles.h"
 
 class BaseInstance;
+class KubikJoinGuide;
 class KubikPlay;
 class QFrame;
 class QLabel;
@@ -47,9 +49,11 @@ class QVBoxLayout;
  * anything that stops it is said in the same place, with the one button that
  * fixes it where there is one (pay the invoice, add a Minecraft account).
  *
- * While the game it launched runs, Play reads "In game" and a short card says
- * how the join works: Minecraft connects by itself, and the server is at the top
- * of Multiplayer for a rejoin.
+ * The address has a card of its own, the one thing a player may need to type.
+ * Under the hero, "How to join" walks through the join with pictures of the
+ * Minecraft screens it happens on, drawn for this server (KubikJoinGuide). It is
+ * open until the player says "Got it", and opens again by itself on the first
+ * game; after that it is a link next to Play.
  */
 class KubikServerPage : public QWidget {
     Q_OBJECT
@@ -57,7 +61,8 @@ class KubikServerPage : public QWidget {
    public:
     explicit KubikServerPage(QWidget* parent = nullptr);
 
-    void setServer(const Kubik::Server& server);
+    /** The server, and what Home's last ping of it said (its icon, players and message of the day), if any. */
+    void setServer(const Kubik::Server& server, const KubikServerLive* live = nullptr);
     QString serverId() const { return m_server.id; }
     /** Press Play, as the button does. */
     void play(bool newInstance = false);
@@ -82,6 +87,8 @@ class KubikServerPage : public QWidget {
     /** The instance this server plays in: the remembered one, or the only one that fits. */
     BaseInstance* currentInstance() const;
     bool inGame() const;
+    /** The language the server's game is set to (its options.txt), which the join pictures follow. */
+    QString gameLanguage() const;
     void watchInstance();
     void updateJoinCard();
     void updateAccountNote();
@@ -90,6 +97,7 @@ class KubikServerPage : public QWidget {
     void onPlayFinished();
 
     Kubik::Server m_server;
+    std::optional<KubikServerLive> m_live;
     std::optional<Kubik::Pack> m_pack;
     QString m_packError;
     QPointer<KubikPlay> m_play;
@@ -99,7 +107,10 @@ class KubikServerPage : public QWidget {
     QLabel* m_name;
     QLabel* m_about;
     QLabel* m_status;
+    QFrame* m_addressCard;
+    QLabel* m_addressLabel;
     QLabel* m_address;
+    QLabel* m_port;
     QPushButton* m_copy;
 
     QPushButton* m_playButton;
@@ -119,10 +130,7 @@ class KubikServerPage : public QWidget {
     std::function<void()> m_noticeCallback;
 
     QPushButton* m_howToJoin;
-    QFrame* m_joinCard;
-    QLabel* m_joinTitle;
-    QLabel* m_joinSteps;
-    QPushButton* m_joinDismiss;
+    KubikJoinGuide* m_joinGuide;
     bool m_joinOpen = false;
     QMetaObject::Connection m_runningWatch;
 
