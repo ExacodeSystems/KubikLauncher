@@ -320,13 +320,18 @@ void KubikSyncTask::applyGameFiles(Kubik::ManagedState& next)
     // updated pack), with a pack.mcmeta for this instance's Minecraft version.
     const QDir pack(FS::PathCombine(m_instance->resourcePacksDir(), "Kubik"));
     const QString bundled = QStringLiteral(":/kubik/resourcepack");
+    int bundledFiles = 0;
     for (QDirIterator it(bundled, QDir::Files, QDirIterator::Subdirectories); it.hasNext();) {
         const QString source = it.next();
         const QString target = pack.filePath(QDir(bundled).relativeFilePath(source));
+        ++bundledFiles;
         QFile in(source);
         if (!in.open(QIODevice::ReadOnly) || !writeFile(target, in.readAll())) {
             qWarning() << "KubikSyncTask: could not place" << target;
         }
+    }
+    if (bundledFiles == 0) {
+        qWarning() << "KubikSyncTask: the bundled resource pack is empty; is resourcepack.qrc registered in main.cpp?";
     }
     writeFile(pack.filePath("pack.mcmeta"), Kubik::packMcmeta(minecraft, QStringLiteral("Kubik · kubik.gg")));
 

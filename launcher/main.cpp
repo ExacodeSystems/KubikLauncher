@@ -58,6 +58,9 @@ int main(int argc, char* argv[])
             Q_INIT_RESOURCE(documents);
             Q_INIT_RESOURCE(kubiklauncher);
             Q_INIT_RESOURCE(kubik);
+            // The resource pack KubikSyncTask copies into each instance. Unregistered, it reads as an empty
+            // folder and Minecraft gets a pack with nothing in it.
+            Q_INIT_RESOURCE(resourcepack);
 
             Q_INIT_RESOURCE(pe_dark);
             Q_INIT_RESOURCE(pe_light);

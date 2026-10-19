@@ -1,3 +1,4 @@
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -205,6 +206,20 @@ class KubikGameFilesTest : public QObject {
         QCOMPARE(newer.value("min_format").toArray().at(0).toInt(), newer.value("pack_format").toInt());
         QCOMPARE(newer.value("max_format").toInt(), 1000);
         QCOMPARE(newer.value("description").toString(), QString("Kubik"));
+    }
+
+    void bundlesThePacksArt()
+    {
+        // Registered the way main.cpp does; an unregistered resourcepack.qrc shipped an empty pack once.
+        Q_INIT_RESOURCE(resourcepack);
+        for (const char* file :
+             { "pack.png", "assets/minecraft/texts/splashes.txt", "assets/minecraft/textures/gui/menu_background.png",
+               "assets/minecraft/textures/gui/options_background.png", "assets/minecraft/textures/gui/sprites/widget/button.png",
+               "assets/minecraft/textures/gui/sprites/widget/button.png.mcmeta",
+               "assets/minecraft/textures/gui/title/background/panorama_0.png",
+               "assets/minecraft/textures/gui/title/background/panorama_overlay.png" }) {
+            QVERIFY2(QFile::exists(QString(":/kubik/resourcepack/") + file), file);
+        }
     }
 };
 
