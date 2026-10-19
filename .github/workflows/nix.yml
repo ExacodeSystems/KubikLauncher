@@ -91,6 +91,9 @@ jobs:
           - os: macos-26
             system: aarch64-darwin
 
+    # Prism's: it pushes to Prism's Cachix cache, which this fork has no key for.
+    if: github.repository == 'PrismLauncher/PrismLauncher'
+
     runs-on: ${{ matrix.os }}
 
     steps:

@@ -45,11 +45,8 @@ jobs:
         run: |
           mv ${{ github.workspace }}/KubikLauncher-source KubikLauncher-${{ env.VERSION }}
           mv KubikLauncher-Linux-Qt6-Portable*/KubikLauncher-portable.tar.gz KubikLauncher-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
-          mv KubikLauncher-Linux-aarch64-Qt6-Portable*/KubikLauncher-portable.tar.gz KubikLauncher-Linux-aarch64-Qt6-Portable-${{ env.VERSION }}.tar.gz
           mv KubikLauncher-*.AppImage/KubikLauncher-*-x86_64.AppImage KubikLauncher-Linux-x86_64.AppImage
           mv KubikLauncher-*.AppImage.zsync/KubikLauncher-*-x86_64.AppImage.zsync KubikLauncher-Linux-x86_64.AppImage.zsync
-          mv KubikLauncher-*.AppImage/KubikLauncher-*-aarch64.AppImage KubikLauncher-Linux-aarch64.AppImage
-          mv KubikLauncher-*.AppImage.zsync/KubikLauncher-*-aarch64.AppImage.zsync KubikLauncher-Linux-aarch64.AppImage.zsync
           mv KubikLauncher-macOS*/KubikLauncher.zip KubikLauncher-macOS-${{ env.VERSION }}.zip
           mv KubikLauncher-macOS*/KubikLauncher.dmg KubikLauncher-macOS-${{ env.VERSION }}.dmg
 
@@ -70,17 +67,6 @@ jobs:
             cd ..
           done
 
-          for d in KubikLauncher-Windows-MinGW-w64*; do
-            cd "${d}" || continue
-            INST="$(echo -n ${d} | grep -o Setup || true)"
-            PORT="$(echo -n ${d} | grep -o Portable || true)"
-            NAME="KubikLauncher-Windows-MinGW-w64"
-            test -z "${PORT}" || NAME="${NAME}-Portable"
-            test -z "${INST}" || mv KubikLauncher-*.exe ../${NAME}-Setup-${{ env.VERSION }}.exe
-            test -n "${INST}" || zip -r -9 "../${NAME}-${{ env.VERSION }}.zip" *
-            cd ..
-          done
-
       - name: Create release
         id: create_release
         uses: softprops/action-gh-release@v3
@@ -94,16 +80,7 @@ jobs:
           files: |
             KubikLauncher-Linux-x86_64.AppImage
             KubikLauncher-Linux-x86_64.AppImage.zsync
-            KubikLauncher-Linux-aarch64.AppImage
-            KubikLauncher-Linux-aarch64.AppImage.zsync
             KubikLauncher-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
-            KubikLauncher-Linux-aarch64-Qt6-Portable-${{ env.VERSION }}.tar.gz
-            KubikLauncher-Windows-MinGW-w64-${{ env.VERSION }}.zip
-            KubikLauncher-Windows-MinGW-w64-Portable-${{ env.VERSION }}.zip
-            KubikLauncher-Windows-MinGW-w64-Setup-${{ env.VERSION }}.exe
-            KubikLauncher-Windows-MSVC-arm64-${{ env.VERSION }}.zip
-            KubikLauncher-Windows-MSVC-arm64-Portable-${{ env.VERSION }}.zip
-            KubikLauncher-Windows-MSVC-arm64-Setup-${{ env.VERSION }}.exe
             KubikLauncher-Windows-MSVC-${{ env.VERSION }}.zip
             KubikLauncher-Windows-MSVC-Portable-${{ env.VERSION }}.zip
             KubikLauncher-Windows-MSVC-Setup-${{ env.VERSION }}.exe

@@ -5,6 +5,12 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  # Every push to main builds, so there is always a recent Windows and Linux build to download from the
+  # run's page. Release builds come from release.yml, on a tag.
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
   merge_group:
     types: [checks_requested]
   pull_request:
@@ -42,22 +48,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # One build per desktop our players use. Prism also builds Linux and Windows on ARM and a
+        # MinGW Windows build; add them back here and in release.yml when somebody needs them.
         include:
           - os: ubuntu-24.04
             artifact-name: Linux
             cmake-preset: linux
-            qt-version: 6.11.2
-
-          - os: ubuntu-24.04-arm
-            artifact-name: Linux-aarch64
-            cmake-preset: linux
-            qt-version: 6.11.2
-
-          - os: windows-2022
-            artifact-name: Windows-MinGW-w64
-            cmake-preset: windows_mingw
-            msystem: CLANG64
-            vcvars-arch: amd64_x86
             qt-version: 6.11.2
 
           - os: windows-2022
@@ -65,12 +61,6 @@ jobs:
             cmake-preset: windows_msvc
             # TODO(@getchoo): This is the default in setup-dependencies/windows. Why isn't it working?!?!
             vcvars-arch: amd64
-            qt-version: 6.11.2
-
-          - os: windows-11-arm
-            artifact-name: Windows-MSVC-arm64
-            cmake-preset: windows_msvc
-            vcvars-arch: arm64
             qt-version: 6.11.2
 
           - os: macos-26
@@ -119,17 +109,37 @@ jobs:
 
       - name: Configure project
         run: |
-          cmake --preset "$CMAKE_PRESET" -D VCPKG_HOST_TRIPLET="$VCPKG_TRIPLET" -D VCPKG_TARGET_TRIPLET="$VCPKG_TRIPLET"
+          set -o pipefail
+          cmake --preset "$CMAKE_PRESET" -D VCPKG_HOST_TRIPLET="$VCPKG_TRIPLET" -D VCPKG_TARGET_TRIPLET="$VCPKG_TRIPLET" 2>&1 | tee ci-configure.log
 
       - name: Run build
         run: |
-          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE"
+          set -o pipefail
+          cmake --build --preset "$CMAKE_PRESET" --config "$BUILD_TYPE" 2>&1 | tee ci-build.log
 
       - name: Run tests
         env:
           MSYS2_PATH_TYPE: inherit
         run: |
-          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE"
+          set -o pipefail
+          ctest --preset "$CMAKE_PRESET" --build-config "$BUILD_TYPE" 2>&1 | tee ci-test.log
+
+      # A run's logs can only be read signed in to GitHub; its annotations can be read by anyone, on the
+      # run's page and through the API. So a failure also puts the lines that say why into one annotation.
+      - name: Report why it failed
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          # Each grep may find nothing, or no log when an earlier step failed: neither may stop the others.
+          {
+            grep -E -A4 "CMake Error" ci-configure.log 2>/dev/null || true
+            grep -E "error( [A-Z]+[0-9]+)?:|FAILED:|undefined reference|LNK[0-9]{4}" ci-build.log 2>/dev/null || true
+            grep -E "FAIL!|\*\*\*Failed|\*\*\*Exception|Not Run|Timeout" ci-test.log 2>/dev/null || true
+          } | head -80 > ci-why.txt || true  # head closing early is a SIGPIPE, not a failure
+          if [ -s ci-why.txt ]; then
+            # Annotation escapes: % first, then line breaks.
+            echo "::error title=Why it failed::$(sed -e 's/%/%25/g' -e 's/\r//g' ci-why.txt | awk '{printf "%s%%0A", $0}')"
+          fi
 
       ##
       # PACKAGE
