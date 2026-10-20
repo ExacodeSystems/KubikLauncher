@@ -35,6 +35,7 @@
 #include "Application.h"
 #include "InstanceList.h"
 #include "kubik/KubikAccount.h"
+#include "kubik/KubikPlay.h"
 #include "launch/LaunchTask.h"
 #include "translations/TranslationsModel.h"
 #include "ui/InstanceWindow.h"
@@ -142,6 +143,9 @@ bool gameGotGoing()
     // Nothing launched (no account that can play): there is nothing to wait for.
     return ticks > 12;
 }
+
+// Set once the play walk's Play has shown a launch step of its own (installing Java, the game's files) on its bar.
+bool launchStepShown = false;
 
 /** The instance Play launched, else the first in the list (a walk on a data dir with several instances). */
 QString playedInstanceId(QMainWindow* window)
@@ -258,74 +262,125 @@ void startIfRequested()
     // sync its mods, launch), then open the next server of the same profile to show it shares the instance.
     static const QString playServer = qEnvironmentVariable("KUBIKLAUNCHER_SNAPSHOT_PLAY");
     static const QString shareServer = qEnvironmentVariable("KUBIKLAUNCHER_SNAPSHOT_SHARE");
-    static const QList<Step> playWalk = {
-        { "Servers", {} },
-        { "Play-server", [](QMainWindow* window) { openServer(window, playServer); } },
-        // Down to "How to join", and each of its steps.
-        { "Play-guide", [](QMainWindow* window) { scrollTo(window->findChild<KubikJoinGuide*>()); } },
-        { "Play-guide-2", [](QMainWindow* window) { showGuideStep(window, 1); } },
-        { "Play-guide-3", [](QMainWindow* window) { showGuideStep(window, 2); } },
-        { "Play-guide-4", [](QMainWindow* window) { showGuideStep(window, 3); } },
-        { "Play-started",
-          [](QMainWindow* window) {
-              if (auto* page = window->findChild<KubikServerPage*>()) {
-                  page->play();
-              }
-          } },
-        { "Play-progress", {}, false, [](QMainWindow*) { return false; }, 8 },
-        // Installing Minecraft and the loader is a real download: give it ten minutes.
-        { "Play-finished",
-          {},
-          false,
-          [](QMainWindow* window) {
-              auto* page = window->findChild<KubikServerPage*>();
-              return page && !page->isPlaying();
-          },
-          240 },
-        // Minecraft starting, up to joining the server: a first start of Forge runs its installer, so allow ten
-        // minutes. The Logs tab further on shows what the game logged.
-        { "Game-connecting", {}, false, [](QMainWindow*) { return gameGotGoing(); }, 240 },
-        // The install log Play kept, opened.
-        { "Play-details",
-          [](QMainWindow* window) {
-              if (auto* toggle = window->findChild<QPushButton*>("kubikDetailsToggle")) {
-                  toggle->click();
-              }
-          } },
-        { "Instances-after-play",
-          [](QMainWindow* window) {
-              if (auto* sidebar = window->findChild<KubikSidebar*>()) {
-                  sidebar->setCurrentPage(KubikSidebar::Instances);
-              }
-          } },
-        // The instance Play made, on each of its tabs.
-        { "Instance-overview",
-          [](QMainWindow* window) {
-              const QString id = playedInstanceId(window);
-              if (auto* home = window->findChild<KubikHomePage*>(); home && !id.isEmpty()) {
-                  emit home->instanceOpened(id);
-              }
-          } },
-        { "Instance-mods",
-          [](QMainWindow* window) {
-              if (auto* page = window->findChild<KubikInstancePage*>()) {
-                  page->showTab(KubikInstancePage::Mods);
-              }
-          } },
-        { "Instance-logs",
-          [](QMainWindow* window) {
-              if (auto* page = window->findChild<KubikInstancePage*>()) {
-                  page->showTab(KubikInstancePage::Logs);
-              }
-          } },
-        { "Instance-advanced",
-          [](QMainWindow* window) {
-              if (auto* page = window->findChild<KubikInstancePage*>()) {
-                  page->showTab(KubikInstancePage::Advanced);
-              }
-          } },
-        { "Shared-server", [](QMainWindow* window) { openServer(window, shareServer); } },
-    };
+    // KUBIKLAUNCHER_SNAPSHOT_CANCEL_LAUNCH=1: press Cancel while the launch is installing something.
+    static const bool cancelLaunch = qEnvironmentVariable("KUBIKLAUNCHER_SNAPSHOT_CANCEL_LAUNCH") == QLatin1String("1");
+    static const QList<Step> playWalk = [] {
+        QList<Step> steps = {
+            { "Servers", {} },
+            { "Play-server", [](QMainWindow* window) { openServer(window, playServer); } },
+            // Down to "How to join", and each of its steps.
+            { "Play-guide", [](QMainWindow* window) { scrollTo(window->findChild<KubikJoinGuide*>()); } },
+            { "Play-guide-2", [](QMainWindow* window) { showGuideStep(window, 1); } },
+            { "Play-guide-3", [](QMainWindow* window) { showGuideStep(window, 2); } },
+            { "Play-guide-4", [](QMainWindow* window) { showGuideStep(window, 3); } },
+            { "Play-started",
+              [](QMainWindow* window) {
+                  if (auto* page = window->findChild<KubikServerPage*>()) {
+                      page->play();
+                      // Back up to the bar: the guide steps above left the page scrolled down.
+                      scrollTo(page->findChild<QPushButton*>("kubikHeroPlay"));
+                      // The stage goes to Launching once ("Starting Minecraft…"); a second time is a launch step.
+                      if (auto* play = page->findChild<KubikPlay*>()) {
+                          QObject::connect(play, &KubikPlay::stageChanged, play, [](KubikPlay::Stage stage, const QString&) {
+                              static int launching = 0;
+                              if (stage == KubikPlay::Stage::Launching && ++launching >= 2) {
+                                  launchStepShown = true;
+                              }
+                          });
+                      }
+                  }
+              } },
+            { "Play-progress", {}, false, [](QMainWindow*) { return false; }, 8 },
+            // A launch step on Play's own bar, where Prism used to open a progress window over the page.
+            { "Play-launching",
+              {},
+              false,
+              [](QMainWindow* window) {
+                  auto* page = window->findChild<KubikServerPage*>();
+                  if (!page || !page->isPlaying()) {
+                      return true;
+                  }
+                  // To press Cancel, hold until the step is one that can stop (a download).
+                  auto* play = page->findChild<KubikPlay*>();
+                  return launchStepShown && (!cancelLaunch || (play && play->canCancel()));
+              },
+              240 },
+            { "Play-launch-cancelled",
+              [](QMainWindow* window) {
+                  if (auto* play = window->findChild<KubikPlay*>(); play && play->canCancel()) {
+                      play->cancel();
+                  }
+              },
+              false,
+              [](QMainWindow* window) {
+                  auto* page = window->findChild<KubikServerPage*>();
+                  // A launch Play cancelled must not have opened Prism's console window over the page.
+                  for (auto* widget : QApplication::topLevelWidgets()) {
+                      if (qobject_cast<InstanceWindow*>(widget) && widget->isVisible()) {
+                          qWarning() << "KubikSnapshot: an instance window is open:" << widget->windowTitle();
+                      }
+                  }
+                  return page && !page->isPlaying();
+              },
+              8 },
+            // Installing Minecraft and the loader is a real download: give it ten minutes.
+            { "Play-finished",
+              {},
+              false,
+              [](QMainWindow* window) {
+                  auto* page = window->findChild<KubikServerPage*>();
+                  return page && !page->isPlaying();
+              },
+              240 },
+            // Minecraft starting, up to joining the server: a first start of Forge runs its installer, so allow ten
+            // minutes. The Logs tab further on shows what the game logged.
+            { "Game-connecting", {}, false, [](QMainWindow*) { return gameGotGoing(); }, 240 },
+            // The install log Play kept, opened.
+            { "Play-details",
+              [](QMainWindow* window) {
+                  if (auto* toggle = window->findChild<QPushButton*>("kubikDetailsToggle")) {
+                      toggle->click();
+                  }
+              } },
+            { "Instances-after-play",
+              [](QMainWindow* window) {
+                  if (auto* sidebar = window->findChild<KubikSidebar*>()) {
+                      sidebar->setCurrentPage(KubikSidebar::Instances);
+                  }
+              } },
+            // The instance Play made, on each of its tabs.
+            { "Instance-overview",
+              [](QMainWindow* window) {
+                  const QString id = playedInstanceId(window);
+                  if (auto* home = window->findChild<KubikHomePage*>(); home && !id.isEmpty()) {
+                      emit home->instanceOpened(id);
+                  }
+              } },
+            { "Instance-mods",
+              [](QMainWindow* window) {
+                  if (auto* page = window->findChild<KubikInstancePage*>()) {
+                      page->showTab(KubikInstancePage::Mods);
+                  }
+              } },
+            { "Instance-logs",
+              [](QMainWindow* window) {
+                  if (auto* page = window->findChild<KubikInstancePage*>()) {
+                      page->showTab(KubikInstancePage::Logs);
+                  }
+              } },
+            { "Instance-advanced",
+              [](QMainWindow* window) {
+                  if (auto* page = window->findChild<KubikInstancePage*>()) {
+                      page->showTab(KubikInstancePage::Advanced);
+                  }
+              } },
+            { "Shared-server", [](QMainWindow* window) { openServer(window, shareServer); } },
+        };
+        // Pressing Cancel mid-launch wants the launch's own download, so it skips the install's progress shot.
+        steps.removeIf(
+            [](const Step& step) { return step.name == QLatin1String(cancelLaunch ? "Play-progress" : "Play-launch-cancelled"); });
+        return steps;
+    }();
     // KUBIKLAUNCHER_SNAPSHOT_DIALOGS=1 (on a data dir that already has an instance): every window a player can
     // open from an instance and from the profile card, each saved and then dismissed without doing anything.
     const auto action = [](KubikInstancePage::Action act) {

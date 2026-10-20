@@ -36,6 +36,8 @@
 #pragma once
 #include <tools/BaseProfiler.h>
 
+#include <functional>
+
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/auth/MinecraftAccount.h"
 #include "minecraft/launch/MinecraftTarget.h"
@@ -67,6 +69,14 @@ class LaunchController : public Task {
     void setTargetToJoin(MinecraftTarget::Ptr targetToJoin) { m_targetToJoin = std::move(targetToJoin); }
 
     void setAccountToUse(MinecraftAccountPtr accountToUse) { m_accountToUse = std::move(accountToUse); }
+
+    /**
+     * KubikLauncher: instead of a progress window, a launch step with work to show (installing Java, fetching
+     * the game's files) is handed to `handler` and the launch carries on. Whoever shows those steps also reports
+     * a launch that fails before the game is running, so no console window opens for one (KubikPlay shows both
+     * on the server page). A crash once the game runs still opens it.
+     */
+    void setProgressHandler(std::function<void(Task*)> handler) { m_progressHandler = std::move(handler); }
 
     QString id() const { return m_instance->id(); }
 
@@ -100,4 +110,6 @@ class LaunchController : public Task {
     AuthSessionPtr m_session = nullptr;
     LaunchTask* m_launcher = nullptr;
     MinecraftTarget::Ptr m_targetToJoin = nullptr;
+    std::function<void(Task*)> m_progressHandler;
+    bool m_gameRunning = false;
 };

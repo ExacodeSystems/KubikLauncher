@@ -37,6 +37,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include <QApplication>
@@ -212,11 +213,13 @@ class Application : public QApplication {
 #endif
 
    public slots:
+    /** `prepare` sees the launch's controller before it starts (KubikPlay sets its progress handler there). */
     bool launch(MinecraftInstance* instance,
                 LaunchMode mode = LaunchMode::Normal,
                 std::shared_ptr<MinecraftTarget> targetToJoin = nullptr,
                 shared_qobject_ptr<MinecraftAccount> accountToUse = nullptr,
-                const QString& offlineName = QString());
+                const QString& offlineName = QString(),
+                const std::function<void(LaunchController&)>& prepare = {});
     bool kill(BaseInstance* instance);
     static void closeCurrentWindow();
 

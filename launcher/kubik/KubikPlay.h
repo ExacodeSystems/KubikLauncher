@@ -64,7 +64,8 @@ class InstallLog {
  *   3. If the server is asleep, open its page on kubik.gg, where waking it goes
  *      through the dashboard's own checks, and watch for it to come up meanwhile.
  *   4. Sync the instance's mods to this server (KubikSyncTask).
- *   5. Launch, joining the server's address.
+ *   5. Launch, joining the server's address. What the launch itself installs (Java, the
+ *      game's own files) shows on the same bar; Play is done once the game is running.
  *
  * Every refusal arrives as `failed` with a sentence for the player; nothing is
  * launched after one, because an instance that does not match cannot join.
@@ -88,6 +89,8 @@ class KubikPlay : public QObject {
 
     void start();
     void cancel();
+    /** Whether cancel() can stop Play now: once Minecraft is starting, only while a download is running. */
+    bool canCancel() const;
     /** The answer to choiceNeeded: an existing instance, or nullptr to make a new one. */
     void choose(BaseInstance* instance);
 
@@ -121,6 +124,9 @@ class KubikPlay : public QObject {
     void watchServer();
     void pollServer();
     void launchIfReady();
+    /** A launch step with work to show (installing Java, fetching the game's files), on the page's bar. */
+    void followLaunchStep(Task* step);
+    void onGameRunning();
 
     Kubik::Server m_server;
     std::optional<Kubik::Pack> m_pack;
@@ -134,6 +140,8 @@ class KubikPlay : public QObject {
     bool m_synced = false;
     bool m_serverUp = false;
     bool m_over = false;
+    // Handed to Prism's launch, until the game is running.
+    bool m_launching = false;
     QTimer* m_poll = nullptr;
     QElapsedTimer m_waiting;
     Kubik::InstallLog m_log;

@@ -865,6 +865,22 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <source>Minecraft is starting and joins %1.</source>
         <translation>Minecraft lagi dibuka dan bakal join ke %1.</translation>
     </message>
+    <message>
+        <source>Getting Java ready for Minecraft…</source>
+        <translation>Nyiapin Java buat Minecraft…</translation>
+    </message>
+    <message>
+        <source>Getting Minecraft&apos;s files ready…</source>
+        <translation>Nyiapin file Minecraft…</translation>
+    </message>
+    <message>
+        <source>Minecraft could not start: %1</source>
+        <translation>Minecraft gagal dijalanin: %1</translation>
+    </message>
+    <message>
+        <source>Starting Minecraft was cancelled.</source>
+        <translation>Ngejalanin Minecraft dibatalin.</translation>
+    </message>
 </context>
 <context>
     <name>KubikServerDelegate</name>

@@ -1560,7 +1560,8 @@ bool Application::launch(MinecraftInstance* instance,
                          LaunchMode mode,
                          MinecraftTarget::Ptr targetToJoin,
                          MinecraftAccountPtr accountToUse,
-                         const QString& offlineName)
+                         const QString& offlineName,
+                         const std::function<void(LaunchController&)>& prepare)
 {
     if (m_updateRunning) {
         qDebug() << "Cannot launch instances while an update is running. Please try again when updates are completed.";
@@ -1585,6 +1586,9 @@ bool Application::launch(MinecraftInstance* instance,
             controller->setParentWidget(window);
         } else if (m_mainWindow) {
             controller->setParentWidget(m_mainWindow);
+        }
+        if (prepare) {
+            prepare(*controller);
         }
         connect(controller.get(), &LaunchController::finished, this, &Application::controllerFinished);
         addRunningInstance();

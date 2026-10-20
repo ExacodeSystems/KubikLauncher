@@ -457,6 +457,7 @@ void LaunchController::launchInstance()
 
 void LaunchController::readyForLaunch()
 {
+    m_gameRunning = true;
     if (!m_profiler) {
         m_launcher->proceed();
         return;
@@ -510,7 +511,8 @@ void LaunchController::onSucceeded()
 
 void LaunchController::onFailed(QString reason)
 {
-    if (m_instance->settings()->get("ShowConsoleOnError").toBool()) {
+    const bool reportedElsewhere = m_progressHandler && !m_gameRunning;
+    if (!reportedElsewhere && m_instance->settings()->get("ShowConsoleOnError").toBool()) {
         APPLICATION->showInstanceWindow(m_instance, "console");
     }
     emitFailed(std::move(reason));
@@ -518,6 +520,12 @@ void LaunchController::onFailed(QString reason)
 
 void LaunchController::onProgressRequested(Task* task) const
 {
+    if (m_progressHandler) {
+        // Handed over before the step goes on, so whoever follows it sees all of it.
+        m_progressHandler(task);
+        m_launcher->proceed();
+        return;
+    }
     ProgressDialog progDialog(m_parentWidget);
     progDialog.showSkipButton();
     m_launcher->proceed();

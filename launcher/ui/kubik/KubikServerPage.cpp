@@ -594,7 +594,7 @@ void KubikServerPage::updatePlayState()
     const bool playing = !running && inGame();
     const bool playable = m_server.profile.has_value() && !m_server.locked;
     m_playButton->setVisible(playable);
-    m_playButton->setEnabled(!playing);
+    m_playButton->setEnabled(running ? m_play->canCancel() : !playing);
     m_playButton->setText(running ? tr("Cancel") : playing ? tr("In game") : tr("Play"));
     m_playButton->setProperty("kubikRole", running ? "quiet" : "primary");
     m_playButton->style()->unpolish(m_playButton);
@@ -643,6 +643,8 @@ void KubikServerPage::play(bool newInstance)
         if (stage != KubikPlay::Stage::Installing && stage != KubikPlay::Stage::Syncing) {
             m_progress->setRange(0, 0);
         }
+        // Whether Cancel can stop it changes with the stage.
+        updatePlayState();
     });
     connect(m_play, &KubikPlay::progressChanged, this, [this](qint64 done, qint64 total) {
         if (total > 0) {

@@ -26,14 +26,17 @@
 #include "Application.h"
 #include "InstanceImportTask.h"
 #include "InstanceList.h"
+#include "LaunchController.h"
 #include "kubik/KubikAccount.h"
 #include "kubik/KubikApi.h"
 #include "kubik/KubikDev.h"
 #include "kubik/KubikInstanceTask.h"
 #include "kubik/KubikProfiles.h"
 #include "kubik/KubikSyncTask.h"
+#include "launch/LaunchTask.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/auth/AccountList.h"
+#include "minecraft/launch/AutoInstallJava.h"
 #include "minecraft/launch/MinecraftTarget.h"
 
 namespace {
@@ -151,6 +154,19 @@ void KubikPlay::cancel()
     if (m_over) {
         return;
     }
+    if (m_launching) {
+        // Through the launch task, so Prism ends its side (the running instance, the controller) as it always has.
+        auto* task = m_instance ? m_instance->getLaunchTask() : nullptr;
+        if (!task || !task->canAbort()) {
+            return;
+        }
+        // Over before the abort: it fails the launch on the spot, and that failure is this cancel, not news.
+        m_over = true;
+        if (!task->abort()) {
+            m_over = false;
+            return;
+        }
+    }
     m_over = true;
     if (m_poll) {
         m_poll->stop();
@@ -162,6 +178,15 @@ void KubikPlay::cancel()
         m_installTask->abort();
     }
     emit cancelled();
+}
+
+bool KubikPlay::canCancel() const
+{
+    if (!m_launching) {
+        return true;
+    }
+    const auto* task = m_instance ? m_instance->getLaunchTask() : nullptr;
+    return task && task->canAbort();
 }
 
 void KubikPlay::start()
@@ -382,13 +407,64 @@ void KubikPlay::launchIfReady()
         return;
     }
     setStage(Stage::Launching, tr("Starting Minecraft…"));
-    m_over = true;
+    m_launching = true;
+    // The launch's task is made once Prism has settled the account; its game process running ends Play.
+    connect(m_instance, &BaseInstance::launchTaskChanged, this, [this](LaunchTask* task) {
+        if (m_launching && task) {
+            connect(task, &LaunchTask::readyForLaunch, this, &KubikPlay::onGameRunning, Qt::UniqueConnection);
+        }
+    });
     const auto target = std::make_shared<MinecraftTarget>(MinecraftTarget::parse(m_pack->address, false));
-    if (APPLICATION->launch(m_instance, LaunchMode::Normal, target)) {
-        Kubik::recordLaunch(m_server.id, m_instance);
-        log(tr("Minecraft is starting and joins %1.").arg(m_pack->address));
-        emit launched(m_instance->id());
-    } else {
-        emit failed(tr("Minecraft could not be started from %1.").arg(m_instance->name()));
+    const bool accepted =
+        APPLICATION->launch(m_instance, LaunchMode::Normal, target, nullptr, QString(), [this](LaunchController& controller) {
+            // Installing Java and fetching the game's own files show on this bar, not in a Prism window over the page.
+            controller.setProgressHandler([play = QPointer<KubikPlay>(this)](Task* step) {
+                if (play) {
+                    play->followLaunchStep(step);
+                }
+            });
+            connect(&controller, &Task::failed, this,
+                    [this](const QString& reason) { fail(tr("Minecraft could not start: %1").arg(reason.trimmed())); });
+            connect(&controller, &Task::aborted, this, [this] { fail(tr("Starting Minecraft was cancelled.")); });
+        });
+    if (!accepted) {
+        m_launching = false;
+        fail(tr("Minecraft could not be started from %1.").arg(m_instance->name()));
+        return;
     }
+    Kubik::recordLaunch(m_server.id, m_instance);
+}
+
+void KubikPlay::followLaunchStep(Task* step)
+{
+    if (m_over) {
+        return;
+    }
+    // Prism's own words for these ("Executing task 1 out of 2") say nothing to a player, so the bar names the step.
+    // Only the Java install goes in the log too: the game's files are checked in several steps a second apart,
+    // and their own lines ("Updating assets index...") say more there than this one repeated.
+    const bool java = qobject_cast<AutoInstallJava*>(step) != nullptr;
+    const QString status = java ? tr("Getting Java ready for Minecraft…") : tr("Getting Minecraft's files ready…");
+    if (java) {
+        log(status);
+    }
+    emit stageChanged(Stage::Launching, status);
+    logTask(step);
+    connect(step, &Task::progress, this, &KubikPlay::progressChanged);
+    connect(step, &Task::succeeded, this, [this] {
+        if (!m_over) {
+            emit stageChanged(Stage::Launching, tr("Starting Minecraft…"));
+        }
+    });
+}
+
+void KubikPlay::onGameRunning()
+{
+    if (m_over) {
+        return;
+    }
+    m_over = true;
+    m_launching = false;
+    log(tr("Minecraft is starting and joins %1.").arg(m_pack->address));
+    emit launched(m_instance ? m_instance->id() : QString());
 }
