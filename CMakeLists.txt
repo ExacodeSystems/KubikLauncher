@@ -192,7 +192,7 @@ set(Launcher_LOGIN_CALLBACK_URL "https://kubik.gg/launcher/signed-in" CACHE STRI
 # A dev build points these at a local api (:8787) and dashboard (WEB_PORT); the settings
 # KubikApiUrlOverride / KubikWebUrlOverride and the env vars KUBIKLAUNCHER_API_URL / _WEB_URL do the same at runtime.
 set(Launcher_KUBIK_API_URL "https://api.kubik.gg" CACHE STRING "kubik.gg's api origin, which serves /launcher/v1.")
-set(Launcher_KUBIK_WEB_URL "https://kubik.gg" CACHE STRING "kubik.gg's dashboard origin, where the launcher signs in.")
+set(Launcher_KUBIK_WEB_URL "https://dashboard.kubik.gg" CACHE STRING "kubik.gg's dashboard origin, where the launcher signs in. Not kubik.gg itself: that is the marketing site.")
 set(Launcher_LEGACY_FMLLIBS_BASE_URL "https://files.prismlauncher.org/fmllibs/" CACHE STRING "URL for legacy (<=1.5.2) FML Libraries.")
 
 ######## Set version numbers ########

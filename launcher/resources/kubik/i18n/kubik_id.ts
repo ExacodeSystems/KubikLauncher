@@ -1081,6 +1081,38 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <source>Port %1</source>
         <translation>Port %1</translation>
     </message>
+    <message>
+        <source>Ask kubik.gg for this server&apos;s status again</source>
+        <translation>Tanya status server ini ke kubik.gg lagi</translation>
+    </message>
+    <message>
+        <source>Checking…</source>
+        <translation>Lagi ngecek…</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t check %1 again: %2</source>
+        <translation>Gagal ngecek %1 lagi: %2</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Cek lagi</translation>
+    </message>
+    <message>
+        <source>Wake it up on kubik.gg</source>
+        <translation>Bangunin di kubik.gg</translation>
+    </message>
+    <message>
+        <source>Wake it up on kubik.gg, then press Refresh here.</source>
+        <translation>Bangunin di kubik.gg, terus tekan Cek lagi di sini.</translation>
+    </message>
+    <message>
+        <source>Wake it up on kubik.gg, then press Refresh here. Or just press Play: it opens kubik.gg for you and joins once the server is up.</source>
+        <translation>Bangunin di kubik.gg, terus tekan Cek lagi di sini. Atau langsung tekan Main: kubik.gg dibukain buat kamu, dan langsung join begitu servernya nyala.</translation>
+    </message>
+    <message>
+        <source>kubik.gg did not answer just now. Try again in a minute.</source>
+        <translation>kubik.gg lagi nggak jawab. Coba lagi semenit lagi.</translation>
+    </message>
 </context>
 <context>
     <name>KubikSignInPage</name>
@@ -1115,6 +1147,22 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
     <message>
         <source>Sign in with kubik.gg</source>
         <translation>Masuk dengan kubik.gg</translation>
+    </message>
+    <message>
+        <source>No Minecraft account yet</source>
+        <translation>Belum ada akun Minecraft</translation>
+    </message>
+    <message>
+        <source>You can add it from your profile card once you&apos;re in. Joining a server needs it.</source>
+        <translation>Bisa ditambahin dari kartu profil kamu setelah masuk. Buat join server, akun ini wajib ada.</translation>
+    </message>
+    <message>
+        <source>Microsoft needs you to sign in again. You can do that from your profile card once you&apos;re in.</source>
+        <translation>Microsoft minta kamu masuk lagi. Bisa dilakuin dari kartu profil kamu setelah masuk.</translation>
+    </message>
+    <message>
+        <source>%1 connected</source>
+        <translation>%1 tersambung</translation>
     </message>
 </context>
 <context>

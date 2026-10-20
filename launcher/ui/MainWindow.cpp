@@ -354,6 +354,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         connect(m_servers, &KubikServersPage::playRequested, this, [this](const QString& id) { showServerPage(id, true); });
         connect(m_serverPage, &KubikServerPage::backRequested, this, [this] { m_sidebar->setCurrentPage(KubikSidebar::Servers); });
         connect(m_serverPage, &KubikServerPage::instanceOpened, this, &MainWindow::showInstancePage);
+        // The server page's Refresh read one server again; Home's tiles follow, so going back shows the same status.
+        connect(m_serverPage, &KubikServerPage::serverRefreshed, m_servers, [this] { m_servers->refresh(); });
         connect(KubikAccount::get(), &KubikAccount::changed, this, &MainWindow::updateKubikGate);
 
         connect(m_home, &KubikHomePage::serversRequested, this, [this] { m_sidebar->setCurrentPage(KubikSidebar::Servers); });

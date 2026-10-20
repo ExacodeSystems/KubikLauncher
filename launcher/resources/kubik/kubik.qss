@@ -522,6 +522,16 @@ QPushButton#kubikHeroPlay {
     min-width: 120px;
 }
 
+/* A sleeping server's "Wake it up on kubik.gg", beside Play: the same height, in the plain button's tone. */
+QPushButton#kubikWake {
+    font-size: 15px;
+    padding: 12px 24px;
+}
+
+QPushButton#kubikWake:focus {
+    padding: 10px 22px;
+}
+
 /* A row in the instance page's "Manage" list: a quiet block that lights up. */
 QPushButton[kubikRole="row"] {
     color: @bone@;
@@ -631,6 +641,13 @@ QPushButton#kubikAddressCopy:hover {
 #kubikProfileRow {
     background-color: @void.panel@;
     border-radius: 8px;
+}
+
+/* A step that worked, said where it is shown: the sign-in page's connected Minecraft account. */
+#kubikStateOk {
+    color: @grass@;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 /* The memory slider: a filled track up to the handle, in the accent. */

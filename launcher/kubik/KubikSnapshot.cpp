@@ -381,6 +381,39 @@ void startIfRequested()
             [](const Step& step) { return step.name == QLatin1String(cancelLaunch ? "Play-progress" : "Play-launch-cancelled"); });
         return steps;
     }();
+    // KUBIKLAUNCHER_SNAPSHOT_SLEEPING=<server name>: a sleeping server's page, its "Wake it up on kubik.gg" pressed
+    // for real (it opens the server's dashboardUrl in the browser), then Refresh, then Home again.
+    static const QString sleepingServer = qEnvironmentVariable("KUBIKLAUNCHER_SNAPSHOT_SLEEPING");
+    const auto click = [](const char* objectName) {
+        return [objectName](QMainWindow* window) {
+            if (auto* button = window->findChild<QPushButton*>(objectName)) {
+                button->click();
+            }
+        };
+    };
+    static const QList<Step> sleepingWalk = {
+        { "Servers", {} },
+        { "Sleeping-server", [](QMainWindow* window) { openServer(window, sleepingServer); } },
+        { "Sleeping-wake-pressed", click("kubikWake") },
+        { "Sleeping-refreshed", click("kubikStatusRefresh"), false,
+          [](QMainWindow* window) {
+              auto* refresh = window->findChild<QPushButton*>("kubikStatusRefresh");
+              return refresh && refresh->isEnabled();
+          },
+          4 },
+        // Home, searched down to that server: its tile follows the page's Refresh.
+        { "Sleeping-servers-after",
+          [](QMainWindow* window) {
+              if (auto* sidebar = window->findChild<KubikSidebar*>()) {
+                  sidebar->setCurrentPage(KubikSidebar::Servers);
+              }
+              // Home's own search: the instances page has a "kubikSearch" too.
+              auto* home = window->findChild<KubikServersPage*>();
+              if (auto* search = home ? home->findChild<QLineEdit*>("kubikSearch") : nullptr) {
+                  search->setText(sleepingServer);
+              }
+          } },
+    };
     // KUBIKLAUNCHER_SNAPSHOT_DIALOGS=1 (on a data dir that already has an instance): every window a player can
     // open from an instance and from the profile card, each saved and then dismissed without doing anything.
     const auto action = [](KubikInstancePage::Action act) {
@@ -431,6 +464,7 @@ void startIfRequested()
     static const bool dialogs = qEnvironmentVariable("KUBIKLAUNCHER_SNAPSHOT_DIALOGS") == QLatin1String("1");
     static const QList<Step>& steps = !KubikAccount::get()->isSignedIn() ? signedOut
                                       : dialogs                          ? dialogsWalk
+                                      : !sleepingServer.isEmpty()        ? sleepingWalk
                                       : playServer.isEmpty()             ? signedIn
                                                                          : playWalk;
 

@@ -20,6 +20,7 @@
 
 #include <QDesktopServices>
 #include <QEvent>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -30,6 +31,8 @@
 #include "kubik/KubikAccount.h"
 #include "kubik/KubikApi.h"
 #include "kubik/KubikWindowChrome.h"
+#include "minecraft/auth/AccountList.h"
+#include "ui/kubik/KubikAccounts.h"
 
 KubikSignInPage::KubikSignInPage(QWidget* parent) : QWidget(parent)
 {
@@ -45,6 +48,31 @@ KubikSignInPage::KubikSignInPage(QWidget* parent) : QWidget(parent)
     auto* mark = new QLabel(column);
     mark->setPixmap(APPLICATION->logo().pixmap(96, 96));
     content->addWidget(mark);
+
+    // The step before this one, confirmed: who plays, once kubik.gg is connected too.
+    m_minecraft = new QFrame(column);
+    m_minecraft->setObjectName("kubikProfileRow");
+    m_minecraftFace = new QLabel(m_minecraft);
+    m_minecraftName = new QLabel(m_minecraft);
+    m_minecraftName->setObjectName("kubikSectionTitle");
+    m_minecraftOk = new QLabel(m_minecraft);
+    m_minecraftOk->setObjectName("kubikStateOk");
+    m_minecraftState = new QLabel(m_minecraft);
+    m_minecraftState->setObjectName("kubikPageSubtitle");
+    m_minecraftState->setWordWrap(true);
+    auto* words = new QVBoxLayout();
+    words->setSpacing(0);
+    words->addWidget(m_minecraftName);
+    words->addWidget(m_minecraftOk);
+    words->addWidget(m_minecraftState);
+    auto* row = new QHBoxLayout(m_minecraft);
+    row->setContentsMargins(12, 10, 14, 10);
+    row->setSpacing(12);
+    row->addWidget(m_minecraftFace, 0, Qt::AlignVCenter);
+    row->addLayout(words, 1);
+    content->addSpacing(4);
+    content->addWidget(m_minecraft);
+    content->addSpacing(10);
 
     m_title = new QLabel(column);
     m_title->setObjectName("kubikPageTitle");
@@ -93,7 +121,12 @@ KubikSignInPage::KubikSignInPage(QWidget* parent) : QWidget(parent)
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(56, 32 + KubikWindowChrome::titleBarInset(), 56, 32);
     layout->addStretch(2);
-    layout->addWidget(column, 0, Qt::AlignLeft);
+    // A stretch beside the column, not an alignment flag: an aligned item is given its unwrapped height, which
+    // clips the column's wrapped lines.
+    auto* across = new QHBoxLayout();
+    across->addWidget(column);
+    across->addStretch();
+    layout->addLayout(across);
     layout->addStretch(3);
 
     connect(KubikAccount::get(), &KubikAccount::changed, this, &KubikSignInPage::updateState);
@@ -101,6 +134,10 @@ KubikSignInPage::KubikSignInPage(QWidget* parent) : QWidget(parent)
         m_lastError = message;
         updateState();
     });
+    auto* accounts = APPLICATION->accounts();
+    connect(accounts, &AccountList::defaultAccountChanged, this, &KubikSignInPage::updateMinecraft);
+    connect(accounts, &AccountList::listChanged, this, &KubikSignInPage::updateMinecraft);
+    connect(accounts, &AccountList::listActivityChanged, this, &KubikSignInPage::updateMinecraft);
 
     retranslate();
 }
@@ -110,6 +147,30 @@ void KubikSignInPage::retranslate()
     m_cancel->setText(tr("Cancel"));
     m_signUp->setText(tr("No kubik.gg account yet? Create one"));
     updateState();
+    updateMinecraft();
+}
+
+void KubikSignInPage::updateMinecraft()
+{
+    const auto account = KubikAccounts::current();
+    m_minecraftFace->setPixmap(account ? KubikAccounts::avatar(account, 36) : KubikAccounts::microsoftIcon().pixmap(24, 24));
+    m_minecraftFace->setFixedSize(36, 36);
+    m_minecraftFace->setAlignment(Qt::AlignCenter);
+    if (!account) {
+        m_minecraftName->setText(tr("No Minecraft account yet"));
+        m_minecraftState->setText(tr("You can add it from your profile card once you're in. Joining a server needs it."));
+    } else if (KubikAccounts::needsSignIn(account)) {
+        m_minecraftName->setText(account->profileName());
+        m_minecraftState->setText(tr("Microsoft needs you to sign in again. You can do that from your profile card once you're in."));
+    } else {
+        m_minecraftName->setText(account->profileName());
+        m_minecraftOk->setText(QStringLiteral("✓ ") + tr("%1 connected").arg(KubikAccounts::typeLabel(account)));
+    }
+    // Two labels rather than one restyled: a wrapped label whose font changes after layout keeps the old
+    // height and clips its last line.
+    const bool ready = account && !KubikAccounts::needsSignIn(account);
+    m_minecraftOk->setVisible(ready);
+    m_minecraftState->setVisible(!ready);
 }
 
 void KubikSignInPage::updateState()

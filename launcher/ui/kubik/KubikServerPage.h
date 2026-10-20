@@ -49,6 +49,12 @@ class QVBoxLayout;
  * anything that stops it is said in the same place, with the one button that
  * fixes it where there is one (pay the invoice, add a Minecraft account).
  *
+ * A sleeping server is woken on kubik.gg, not here: the launcher's token is
+ * read-only, and the dashboard holds the checks a wake goes through (the
+ * captcha, the free tier's wait). So a sleeping server gets "Wake it up on
+ * kubik.gg", which opens its dashboard page, and the status line has Refresh,
+ * which asks kubik.gg again; the page otherwise shows the status it opened with.
+ *
  * The address has a card of its own, the one thing a player may need to type.
  * Under the hero, "How to join" walks through the join with pictures of the
  * Minecraft screens it happens on, drawn for this server (KubikJoinGuide). It is
@@ -71,6 +77,8 @@ class KubikServerPage : public QWidget {
    signals:
     void backRequested();
     void instanceOpened(const QString& instanceId);
+    /** Refresh fetched the server again; Home's copy of the list is older now. */
+    void serverRefreshed(const QString& serverId);
 
    protected:
     void changeEvent(QEvent* event) override;
@@ -78,6 +86,10 @@ class KubikServerPage : public QWidget {
    private:
     void retranslate();
     void refreshPack();
+    /** Refresh: the server's status, and its pack, from kubik.gg again. */
+    void refreshStatus();
+    void updateRefresh();
+    void updateWake();
     void showPack();
     void updateInstanceLine();
     void updatePlayState();
@@ -107,6 +119,8 @@ class KubikServerPage : public QWidget {
     QLabel* m_name;
     QLabel* m_about;
     QLabel* m_status;
+    QPushButton* m_refresh;
+    bool m_checking = false;
     QFrame* m_addressCard;
     QLabel* m_addressLabel;
     QLabel* m_address;
@@ -115,6 +129,8 @@ class KubikServerPage : public QWidget {
 
     QPushButton* m_playButton;
     QPushButton* m_open;
+    QPushButton* m_wake;
+    QLabel* m_wakeNote;
     QLabel* m_progressText;
     QProgressBar* m_progress;
     // The install log (KubikPlay::logged): what Play did, one line per step, kept after a failure.

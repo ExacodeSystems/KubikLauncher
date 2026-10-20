@@ -20,6 +20,7 @@
 
 #include <QWidget>
 
+class QFrame;
 class QLabel;
 class QPushButton;
 
@@ -28,6 +29,11 @@ class QPushButton;
  * to play the servers on that account, so without it there is nothing else to
  * show. Signing in happens in the browser (KubikAccount); this page says so and
  * waits.
+ *
+ * It also shows the Minecraft account the setup wizard just connected. The
+ * sidebar's profile card, which shows it everywhere else, is hidden until this
+ * page is passed, and without it a player cannot tell whether the Microsoft
+ * sign-in worked.
  */
 class KubikSignInPage : public QWidget {
     Q_OBJECT
@@ -41,7 +47,13 @@ class KubikSignInPage : public QWidget {
    private:
     void retranslate();
     void updateState();
+    void updateMinecraft();
 
+    QFrame* m_minecraft;
+    QLabel* m_minecraftFace;
+    QLabel* m_minecraftName;
+    QLabel* m_minecraftOk;
+    QLabel* m_minecraftState;
     QLabel* m_title;
     QLabel* m_body;
     QLabel* m_error;

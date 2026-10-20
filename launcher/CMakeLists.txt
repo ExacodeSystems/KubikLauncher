@@ -948,6 +948,8 @@ SET(LAUNCHER_SOURCES
     ui/kubik/KubikSidebar.h
     ui/kubik/KubikSignInPage.cpp
     ui/kubik/KubikSignInPage.h
+    ui/kubik/KubikFlowLayout.cpp
+    ui/kubik/KubikFlowLayout.h
 
     # Processes
     LaunchMode.h

@@ -51,6 +51,7 @@
 #include "minecraft/auth/AccountList.h"
 #include "settings/SettingsObject.h"
 #include "ui/kubik/KubikAccounts.h"
+#include "ui/kubik/KubikFlowLayout.h"
 #include "ui/kubik/KubikInstancePicker.h"
 #include "ui/kubik/KubikJoinGuide.h"
 #include "ui/kubik/KubikServerTiles.h"
@@ -113,6 +114,17 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     m_about = bodyText(content);
     m_status = new QLabel(content);
     m_status->setObjectName("kubikPageSubtitle");
+    m_refresh = new QPushButton(content);
+    m_refresh->setObjectName("kubikStatusRefresh");
+    m_refresh->setProperty("kubikRole", "quiet");
+    m_refresh->setIcon(QIcon::fromTheme("refresh"));
+    m_refresh->setCursor(Qt::PointingHandCursor);
+    connect(m_refresh, &QPushButton::clicked, this, &KubikServerPage::refreshStatus);
+    auto* statusRow = new QHBoxLayout();
+    statusRow->setSpacing(8);
+    statusRow->addWidget(m_status);
+    statusRow->addWidget(m_refresh);
+    statusRow->addStretch();
 
     // ── The address: a card of its own, the one thing a player may have to type ──
     m_addressCard = new QFrame(content);
@@ -169,6 +181,12 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     });
     // One action in the hero: Play. Its natural width, so it never pushes past a narrow window.
     m_playButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    // A sleeping server's second action, beside Play: waking happens on its dashboard page.
+    m_wake = new QPushButton(content);
+    m_wake->setObjectName("kubikWake");
+    m_wake->setCursor(Qt::PointingHandCursor);
+    m_wake->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    connect(m_wake, &QPushButton::clicked, this, [this] { QDesktopServices::openUrl(QUrl(m_server.dashboardUrl)); });
     m_howToJoin = new QPushButton(content);
     m_howToJoin->setObjectName("kubikHowToJoin");
     m_howToJoin->setProperty("kubikRole", "link");
@@ -177,13 +195,13 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
         m_joinOpen = true;
         updateJoinCard();
     });
-    auto* actions = new QHBoxLayout();
-    actions->setSpacing(10);
-    actions->setSpacing(18);
+    // Wraps rather than widening the page: Play and a sleeping server's Wake do not fit side by side in a narrow window.
+    auto* actions = new KubikFlowLayout(18, 10);
     actions->addWidget(m_playButton);
+    actions->addWidget(m_wake);
     actions->addWidget(m_howToJoin);
     actions->addWidget(m_open);
-    actions->addStretch();
+    m_wakeNote = bodyText(content, "kubikPageNote");
 
     m_progressText = bodyText(content, "kubikPageSubtitle");
     m_progress = new QProgressBar(content);
@@ -241,11 +259,12 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     words->addStretch();
     words->addWidget(m_name);
     words->addWidget(m_about);
-    words->addWidget(m_status);
+    words->addLayout(statusRow);
     words->addSpacing(10);
     words->addWidget(m_addressCard);
     words->addSpacing(12);
     words->addLayout(actions);
+    words->addWidget(m_wakeNote);
     words->addWidget(m_progressText);
     words->addWidget(m_progress);
     words->addLayout(detailsRow);
@@ -426,6 +445,65 @@ void KubikServerPage::refreshPack()
     });
 }
 
+void KubikServerPage::refreshStatus()
+{
+    if (m_checking || m_server.id.isEmpty()) {
+        return;
+    }
+    m_checking = true;
+    updateRefresh();
+    const QString id = m_server.id;
+    Kubik::apiGet("servers/" + id, KubikAccount::get()->token(), this, [this, id](const Kubik::Reply& reply) {
+        m_checking = false;
+        updateRefresh();
+        if (id != m_server.id) {
+            return;  // the page moved on to another server meanwhile
+        }
+        if (!reply.ok()) {
+            const auto error = Kubik::parseApiError(reply.status, reply.body);
+            if (error.code == "unauthorized") {
+                KubikAccount::get()->tokenRejected();
+                return;
+            }
+            // Play's wording for the codes a status read shares with it; the rest are about the pack.
+            const bool shared = error.code == "offline" || error.code == "not_found";
+            showNotice(tr("Couldn't check %1 again: %2")
+                           .arg(m_server.name,
+                                shared ? KubikPlay::describe(error) : tr("kubik.gg did not answer just now. Try again in a minute.")));
+            return;
+        }
+        const auto server = Kubik::parseServer(reply.body);
+        if (!server) {
+            showNotice(tr("kubik.gg sent something KubikLauncher does not understand."));
+            return;
+        }
+        setServer(*server);
+        refreshPack();
+        emit serverRefreshed(id);
+    });
+}
+
+void KubikServerPage::updateRefresh()
+{
+    m_refresh->setEnabled(!m_checking);
+    m_refresh->setText(m_checking ? tr("Checking…") : tr("Refresh"));
+    m_refresh->setToolTip(tr("Ask kubik.gg for this server's status again"));
+}
+
+void KubikServerPage::updateWake()
+{
+    const bool asleep = m_server.isAsleep() && !m_server.locked && !m_server.dashboardUrl.isEmpty();
+    const bool playable = m_server.profile.has_value() && !m_server.locked;
+    m_wake->setVisible(asleep);
+    // The same page as "Open on kubik.gg", so one of the two is enough.
+    m_open->setVisible(!asleep);
+    // While Play runs, its own line says what it is waiting for.
+    m_wakeNote->setVisible(asleep && !m_play);
+    m_wakeNote->setText(playable ? tr("Wake it up on kubik.gg, then press Refresh here. Or just press Play: it opens kubik.gg for "
+                                      "you and joins once the server is up.")
+                                 : tr("Wake it up on kubik.gg, then press Refresh here."));
+}
+
 void KubikServerPage::showPack()
 {
     while (auto* item = m_modsList->takeAt(0)) {
@@ -602,6 +680,7 @@ void KubikServerPage::updatePlayState()
     m_progressText->setVisible(running);
     m_progress->setVisible(running);
     updateDetails();
+    updateWake();
     m_instanceChange->setEnabled(!running);
 }
 
@@ -673,6 +752,10 @@ void KubikServerPage::play(bool newInstance)
     connect(m_play, &KubikPlay::cancelled, this, &KubikServerPage::onPlayFinished);
     connect(m_play, &KubikPlay::launched, this, [this] {
         onPlayFinished();
+        // Play waited for the server to wake; the status line still says what the page opened with.
+        if (m_server.isAsleep()) {
+            refreshStatus();
+        }
         // The instance may be new (first Play), so watch the one this server now plays in.
         watchInstance();
         if (!APPLICATION->settings()->get("KubikJoinTipSeen").toBool()) {
@@ -721,6 +804,8 @@ void KubikServerPage::retranslate()
 {
     m_back->setText(tr("← Your servers"));
     m_open->setText(tr("Open on kubik.gg"));
+    m_wake->setText(tr("Wake it up on kubik.gg"));
+    updateRefresh();
     m_copy->setToolTip(tr("Copy the address"));
     m_copy->setText(tr("Copy"));
     m_instanceTitle->setText(tr("Instance"));
