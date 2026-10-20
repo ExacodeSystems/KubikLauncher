@@ -237,16 +237,16 @@ untuk detail.</translation>
         <translation>Dimainkan %1</translation>
     </message>
     <message>
-        <source>Not played yet</source>
-        <translation>Belum dimainkan</translation>
-    </message>
-    <message>
         <source>%1 min played</source>
         <translation>%1 menit dimainkan</translation>
     </message>
     <message>
         <source>%1 h %2 min played</source>
         <translation>%1 jam %2 menit dimainkan</translation>
+    </message>
+    <message>
+        <source>Playing now</source>
+        <translation>Lagi dimainkan</translation>
     </message>
 </context>
 <context>

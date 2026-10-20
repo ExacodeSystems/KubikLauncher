@@ -35,6 +35,7 @@
 #include "Application.h"
 #include "InstanceList.h"
 #include "kubik/KubikAccount.h"
+#include "launch/LaunchTask.h"
 #include "translations/TranslationsModel.h"
 #include "ui/InstanceWindow.h"
 #include "ui/instanceview/InstanceView.h"
@@ -110,6 +111,48 @@ void showGuideStep(QMainWindow* window, int index)
         guide->showStep(index);
         scrollTo(guide);
     }
+}
+
+/**
+ * The play walk's wait for Minecraft itself: true once the game Play started has logged that it is connecting
+ * to the server, and a few ticks more so its screen can be captured; or once it has exited, or never started.
+ * A loader's install is only proven by the game loading it, so the walk holds here rather than quitting the
+ * launcher (which stops the game) the moment Play hands over.
+ */
+bool gameGotGoing()
+{
+    static int ticks = 0;
+    static int connectingAt = -1;
+    ++ticks;
+    auto* instances = APPLICATION->instances();
+    for (int i = 0; i < instances->count(); ++i) {
+        auto* task = instances->at(i)->getLaunchTask();
+        if (!task) {
+            continue;
+        }
+        if (connectingAt < 0 && task->getLogModel()->toPlainText().contains("Connecting to ")) {
+            connectingAt = ticks;
+        }
+        if (connectingAt >= 0) {
+            return ticks - connectingAt >= 4;
+        }
+        // Exited before connecting (a crash), after the launch had time to get going.
+        return !instances->at(i)->isRunning() && ticks > 4;
+    }
+    // Nothing launched (no account that can play): there is nothing to wait for.
+    return ticks > 12;
+}
+
+/** The instance Play launched, else the first in the list (a walk on a data dir with several instances). */
+QString playedInstanceId(QMainWindow* window)
+{
+    auto* instances = APPLICATION->instances();
+    for (int i = 0; i < instances->count(); ++i) {
+        if (instances->at(i)->getLaunchTask()) {
+            return instances->at(i)->id();
+        }
+    }
+    return firstInstanceId(window);
 }
 
 /** Open the server called `name` on its page (the play walk). */
@@ -239,6 +282,9 @@ void startIfRequested()
               return page && !page->isPlaying();
           },
           240 },
+        // Minecraft starting, up to joining the server: a first start of Forge runs its installer, so allow ten
+        // minutes. The Logs tab further on shows what the game logged.
+        { "Game-connecting", {}, false, [](QMainWindow*) { return gameGotGoing(); }, 240 },
         // The install log Play kept, opened.
         { "Play-details",
           [](QMainWindow* window) {
@@ -255,7 +301,7 @@ void startIfRequested()
         // The instance Play made, on each of its tabs.
         { "Instance-overview",
           [](QMainWindow* window) {
-              const QString id = firstInstanceId(window);
+              const QString id = playedInstanceId(window);
               if (auto* home = window->findChild<KubikHomePage*>(); home && !id.isEmpty()) {
                   emit home->instanceOpened(id);
               }

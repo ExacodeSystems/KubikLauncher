@@ -249,7 +249,7 @@ void KubikInstanceAdvanced::refresh()
     m_minecraft->setText(minecraft.isEmpty() ? tr("Not read yet") : minecraft);
     m_loader->setText(summary.loaderName.isEmpty() ? tr("None (vanilla)")
                                                    : QStringLiteral("%1 %2").arg(summary.loaderName, summary.loaderVersion));
-    m_played->setText(QStringLiteral("%1 · %2").arg(KubikInstanceInfo::totalPlayed(m_instance), KubikInstanceInfo::lastPlayed(m_instance)));
+    m_played->setText(KubikInstanceInfo::playLine(m_instance));
     m_folderPath->setText(QDir::toNativeSeparators(m_instance->instanceRoot()));
 
     // Off, each override reads the global value, which is what the slider and the path then show.

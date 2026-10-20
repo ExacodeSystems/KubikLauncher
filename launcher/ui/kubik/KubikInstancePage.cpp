@@ -302,7 +302,7 @@ void KubikInstancePage::refresh()
         about << tr("%n mod(s)", nullptr, summary.modCount);
     }
     m_about->setText(about.join(QStringLiteral(" · ")));
-    m_stats->setText(QStringLiteral("%1 · %2").arg(KubikInstanceInfo::totalPlayed(instance), KubikInstanceInfo::lastPlayed(instance)));
+    m_stats->setText(KubikInstanceInfo::playLine(instance));
 
     const bool running = instance->isRunning();
     m_play->setText(running ? tr("Stop") : tr("Play"));

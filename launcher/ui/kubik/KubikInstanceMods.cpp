@@ -107,9 +107,12 @@ QRect KubikModDelegate::removeRect(const QRect& row)
     return QRect(toggle.left() - 14 - REMOVE_W, row.center().y() - 14, REMOVE_W, 28);
 }
 
-QSize KubikModDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex&) const
+QSize KubikModDelegate::sizeHint(const QStyleOptionViewItem&, const QModelIndex&) const
 {
-    return QSize(option.rect.width(), ROW_HEIGHT);
+    // No width of its own: a top-to-bottom QListView stretches each row to the viewport but never shrinks it,
+    // so a row sized to the viewport outgrew it as soon as a long list grew its vertical scrollbar, and the list
+    // scrolled sideways with the switches cut off.
+    return QSize(0, ROW_HEIGHT);
 }
 
 void KubikModDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const

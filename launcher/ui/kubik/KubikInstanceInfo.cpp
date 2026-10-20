@@ -158,16 +158,17 @@ QString KubikInstanceInfo::playedAgo(qint64 last)
     return tr("Played on %1").arg(QLocale().toString(QDateTime::fromMSecsSinceEpoch(last).date(), QLocale::ShortFormat));
 }
 
-QString KubikInstanceInfo::totalPlayed(const BaseInstance* instance)
+QString KubikInstanceInfo::playLine(const BaseInstance* instance)
 {
+    // Each part says what the other does not. The time played shows only once there is a minute of it: before
+    // that, "Not played yet" beside "Played just now" contradicted itself. A running game beats when it started.
+    QStringList parts;
     const qint64 seconds = instance->totalTimePlayed();
-    if (seconds < 60) {
-        return tr("Not played yet");
+    if (seconds >= 60) {
+        const qint64 hours = seconds / 3600;
+        const qint64 minutes = (seconds % 3600) / 60;
+        parts << (hours == 0 ? tr("%1 min played").arg(minutes) : tr("%1 h %2 min played").arg(hours).arg(minutes));
     }
-    const qint64 hours = seconds / 3600;
-    const qint64 minutes = (seconds % 3600) / 60;
-    if (hours == 0) {
-        return tr("%1 min played").arg(minutes);
-    }
-    return tr("%1 h %2 min played").arg(hours).arg(minutes);
+    parts << (instance->isRunning() ? tr("Playing now") : lastPlayed(instance));
+    return parts.join(QStringLiteral(" · "));
 }
