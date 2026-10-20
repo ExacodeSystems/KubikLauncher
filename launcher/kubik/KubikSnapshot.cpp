@@ -27,6 +27,7 @@
 #include <QMenu>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QTimer>
 #include <QWizard>
 
@@ -100,6 +101,17 @@ void scrollTo(QWidget* widget)
     for (QWidget* parent = widget ? widget->parentWidget() : nullptr; parent; parent = parent->parentWidget()) {
         if (auto* scroll = qobject_cast<QScrollArea*>(parent)) {
             scroll->ensureWidgetVisible(widget, 0, 40);
+            return;
+        }
+    }
+}
+
+/** Scroll the page holding `widget` back to its top. */
+void scrollToTop(QWidget* widget)
+{
+    for (QWidget* parent = widget; parent; parent = parent->parentWidget()) {
+        if (auto* scroll = qobject_cast<QScrollArea*>(parent)) {
+            scroll->verticalScrollBar()->setValue(0);
             return;
         }
     }
@@ -277,8 +289,8 @@ void startIfRequested()
               [](QMainWindow* window) {
                   if (auto* page = window->findChild<KubikServerPage*>()) {
                       page->play();
-                      // Back up to the bar: the guide steps above left the page scrolled down.
-                      scrollTo(page->findChild<QPushButton*>("kubikHeroPlay"));
+                      // Back up to the top, bar and all: the guide steps above left the page scrolled down.
+                      scrollToTop(page->findChild<QPushButton*>("kubikHeroPlay"));
                       // The stage goes to Launching once ("Starting Minecraft…"); a second time is a launch step.
                       if (auto* play = page->findChild<KubikPlay*>()) {
                           QObject::connect(play, &KubikPlay::stageChanged, play, [](KubikPlay::Stage stage, const QString&) {
@@ -509,6 +521,17 @@ void startIfRequested()
         auto* window = mainWindow();
         if (!window) {
             return;
+        }
+        // KUBIKLAUNCHER_SNAPSHOT_SIZE=1280x800 sets the main window's size for the whole walk (kubik.gg's
+        // screenshots), then gives it a tick to lay out at that size.
+        static bool sized = false;
+        if (!sized) {
+            sized = true;
+            const QStringList size = qEnvironmentVariable("KUBIKLAUNCHER_SNAPSHOT_SIZE").split('x');
+            if (size.size() == 2 && size[0].toInt() > 0 && size[1].toInt() > 0) {
+                window->resize(size[0].toInt(), size[1].toInt());
+                return;
+            }
         }
         if (pendingSave) {
             const Step& current = steps[step];
