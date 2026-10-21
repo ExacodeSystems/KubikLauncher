@@ -73,7 +73,7 @@ variables, besides other common Qt variables:
 
 # RESOURCES
 
-GitHub: @Launcher_Git@
+Source: @Launcher_Git@
 
 Main website: https://@Launcher_Domain@
 

@@ -1,4 +1,4 @@
-name: Build Application and Make Release
+name: Build Application and Upload Release
 
 on:
   push:
@@ -22,13 +22,17 @@ jobs:
       environment: Release
     secrets: inherit
 
-  create_release:
+  # KubikLauncher: a release is NOT made on GitHub. This job uploads the files to kubik.gg's CDN (R2)
+  # and prints what the back office needs; staff then add the version in the back office (KubikLauncher
+  # module), paste each file's sha256 from this run's summary, and publish it. The site and the
+  # launcher's updater read that list from kubik.gg's api (docs/runbook/release-kubik-launcher.md in
+  # the kubik.gg repo).
+  upload_release:
     needs: build_release
     permissions:
-      contents: write
-    runs-on: ubuntu-slim
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      contents: read
+    # Not ubuntu-slim: the upload to R2 below needs the AWS CLI, which the full image carries.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -40,16 +44,22 @@ jobs:
       - name: Grab and store version
         run: |
           tag_name=$(echo ${{ github.ref }} | grep -oE "[^/]+$")
+          # The back office takes x.y.z, each part at most three digits (the updater numbers releases by
+          # it). Refuse anything else here, before an hour of building turns into files nobody can list.
+          if ! echo "$tag_name" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'; then
+            echo "::error title=Bad tag::Tag releases as x.y.z (e.g. 0.2.0), without a v. Got: $tag_name"
+            exit 1
+          fi
           echo "VERSION=$tag_name" >> $GITHUB_ENV
       - name: Package artifacts properly
         run: |
           mv ${{ github.workspace }}/KubikLauncher-source KubikLauncher-${{ env.VERSION }}
           mv KubikLauncher-Linux-Qt6-Portable*/KubikLauncher-portable.tar.gz KubikLauncher-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
           mv KubikLauncher-*.AppImage/KubikLauncher-*-x86_64.AppImage KubikLauncher-Linux-x86_64.AppImage
-          mv KubikLauncher-*.AppImage.zsync/KubikLauncher-*-x86_64.AppImage.zsync KubikLauncher-Linux-x86_64.AppImage.zsync
           mv KubikLauncher-macOS*/KubikLauncher.zip KubikLauncher-macOS-${{ env.VERSION }}.zip
           mv KubikLauncher-macOS*/KubikLauncher.dmg KubikLauncher-macOS-${{ env.VERSION }}.dmg
 
+          # The source code of exactly this version: the GPL's offer, served beside the binaries.
           tar --exclude='.git' -czf KubikLauncher-${{ env.VERSION }}.tar.gz KubikLauncher-${{ env.VERSION }}
 
           for d in KubikLauncher-Windows-MSVC*; do
@@ -67,23 +77,73 @@ jobs:
             cd ..
           done
 
-      - name: Create release
-        id: create_release
-        uses: softprops/action-gh-release@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: ${{ github.ref }}
-          name: KubikLauncher ${{ env.VERSION }}
-          draft: true
-          prerelease: false
-          fail_on_unmatched_files: true
-          files: |
-            KubikLauncher-Linux-x86_64.AppImage
-            KubikLauncher-Linux-x86_64.AppImage.zsync
-            KubikLauncher-Linux-Qt6-Portable-${{ env.VERSION }}.tar.gz
-            KubikLauncher-Windows-MSVC-${{ env.VERSION }}.zip
-            KubikLauncher-Windows-MSVC-Portable-${{ env.VERSION }}.zip
-            KubikLauncher-Windows-MSVC-Setup-${{ env.VERSION }}.exe
-            KubikLauncher-macOS-${{ env.VERSION }}.zip
-            KubikLauncher-macOS-${{ env.VERSION }}.dmg
-            KubikLauncher-${{ env.VERSION }}.tar.gz
+      # Players download from kubik.gg's CDN (cdn.kubik.gg: Cloudflare in front of R2). Each version is its
+      # own folder, so every object is immutable: nothing is ever overwritten, which matters because the
+      # edge would keep serving old bytes. The file names are the ones the back office expects for each
+      # kind (apps/api/src/launcher/releases.ts `buildFileName` in the kubik.gg repo): change both or
+      # neither.
+      #
+      # Needs the repository secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (an R2 API token
+      # with Object Read & Write on the bucket). Variables R2_BUCKET and LAUNCHER_CDN_URL override the defaults.
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          # R2 does not take every checksum header newer AWS CLIs send by default.
+          AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+          AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET || 'kubik-media' }}
+          CDN_URL: ${{ vars.LAUNCHER_CDN_URL || 'https://cdn.kubik.gg/launcher' }}
+        run: |
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] || [ -z "$R2_ACCOUNT_ID" ]; then
+            echo "::error title=R2 is not set up::Add the secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY. The CDN is the only place a release's files are served from."
+            exit 1
+          fi
+          set -euo pipefail
+          # Every file the back office asks for, by kind, with the type a browser should see.
+          files=(
+            "WINDOWS_INSTALLER=KubikLauncher-Windows-MSVC-Setup-$VERSION.exe=application/vnd.microsoft.portable-executable"
+            "WINDOWS_PORTABLE=KubikLauncher-Windows-MSVC-Portable-$VERSION.zip=application/zip"
+            "MACOS_DMG=KubikLauncher-macOS-$VERSION.dmg=application/x-apple-diskimage"
+            "MACOS_ZIP=KubikLauncher-macOS-$VERSION.zip=application/zip"
+            "LINUX_APPIMAGE=KubikLauncher-Linux-x86_64.AppImage=application/octet-stream"
+            "LINUX_PORTABLE=KubikLauncher-Linux-Qt6-Portable-$VERSION.tar.gz=application/gzip"
+            "SOURCE=KubikLauncher-$VERSION.tar.gz=application/gzip"
+          )
+          for entry in "${files[@]}"; do
+            rest="${entry#*=}"
+            file="${rest%%=*}"
+            type="${rest#*=}"
+            aws s3 cp "$file" "s3://$R2_BUCKET/launcher/$VERSION/$file" \
+              --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com" \
+              --cache-control 'public, max-age=31536000, immutable' \
+              --content-type "$type" \
+              --content-disposition "attachment; filename=\"$file\"" \
+              --only-show-errors
+          done
+          # Read every file back through the CDN, as a player will (and as the back office does when the
+          # file is saved). `?probe=1` changes Cloudflare's cache key but not R2's object key, so this
+          # reaches the bucket and never leaves a 404 cached at the edge.
+          {
+            echo "## KubikLauncher $VERSION on the CDN"
+            echo
+            echo "Add version **$VERSION** in the back office (KubikLauncher), then paste each sha256 into its row."
+            echo
+            echo "| Kind | File | Size (bytes) | sha256 |"
+            echo "|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for entry in "${files[@]}"; do
+            kind="${entry%%=*}"
+            rest="${entry#*=}"
+            file="${rest%%=*}"
+            want=$(stat -c %s "$file")
+            got=$( (curl -fsSI "$CDN_URL/$VERSION/$file?probe=1" || true) | tr -d '\r' | awk 'tolower($1)=="content-length:" {print $2}')
+            if [ "$got" != "$want" ]; then
+              echo "::error title=CDN check failed::$CDN_URL/$VERSION/$file answered ${got:-nothing}, expected $want bytes"
+              exit 1
+            fi
+            sum=$(sha256sum "$file" | cut -d' ' -f1)
+            echo "| $kind | [$file]($CDN_URL/$VERSION/$file) | $want | \`$sum\` |" >> "$GITHUB_STEP_SUMMARY"
+          done

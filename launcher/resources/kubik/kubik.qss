@@ -573,6 +573,58 @@ QScrollBar::sub-page {
     width: 0;
 }
 
+/* A newer KubikLauncher to download (KubikUpdateNotice, macOS and AppImage): a block above the
+   profile card standing on grass's lip. Its buttons are the notice's own, not rail rows, so these
+   rules out-rank `#kubikSidebar QPushButton` with a second id. */
+#kubikUpdateNotice {
+    background-color: @void.panel@;
+    border: 1px solid @block.edge@;
+    border-bottom: 4px solid #046a4d;
+    border-radius: 3px;
+}
+
+#kubikUpdateText {
+    color: @bone@;
+    font-family: "@font.display@";
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#kubikSidebar #kubikUpdateNotice QPushButton {
+    color: @void@;
+    background-color: @grass.mid@;
+    border: none;
+    border-top: 1px solid #45c89d;
+    border-bottom: 4px solid #046a4d;
+    border-radius: 2px;
+    margin: 0;
+    padding: 4px 14px 2px 14px;
+    text-align: center;
+    font-size: 13px;
+}
+
+#kubikSidebar #kubikUpdateNotice QPushButton:hover {
+    background-color: @grass@;
+}
+
+#kubikSidebar #kubikUpdateNotice QPushButton:pressed {
+    margin-top: 3px;
+    border-bottom-width: 1px;
+}
+
+#kubikSidebar #kubikUpdateNotice QPushButton#kubikUpdateClose {
+    color: @bone.muted@;
+    background-color: transparent;
+    border: none;
+    margin: 0;
+    padding: 0 6px;
+    font-size: 16px;
+}
+
+#kubikSidebar #kubikUpdateNotice QPushButton#kubikUpdateClose:hover {
+    color: @bone@;
+}
+
 /* A heading inside a dropdown (the profile card's "Minecraft", "kubik.gg"): a label, not an action. */
 #kubikMenuHeader {
     color: @bone.faint@;

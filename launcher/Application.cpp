@@ -158,6 +158,8 @@
 #else
 #include "updater/PrismExternalUpdater.h"
 #endif
+// KubikLauncher: the update notice for builds that cannot install an update themselves.
+#include "ui/kubik/KubikUpdateNotice.h"
 
 #if defined Q_OS_WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -1326,6 +1328,10 @@ bool Application::updaterEnabled()
 #if defined(Q_OS_MAC)
     return BuildConfig.UPDATER_ENABLED;
 #else
+    // KubikLauncher: an AppImage gets the update notice (KubikUpdateNotice), which needs no updater exe.
+    if (!qEnvironmentVariableIsEmpty("APPIMAGE")) {
+        return BuildConfig.UPDATER_ENABLED;
+    }
     return BuildConfig.UPDATER_ENABLED && QFileInfo(FS::PathCombine(m_rootPath, updaterBinaryName())).isFile();
 #endif
 }
@@ -1416,12 +1422,21 @@ void Application::performMainStartupAction()
     // initialize the updater
     if (updaterEnabled()) {
         qDebug() << "Initializing updater";
+        // KubikLauncher: Windows (and a portable Linux build) install updates from kubik.gg's release
+        // feed through the updater exe. A Mac without a Sparkle feed, and an AppImage, cannot install
+        // one themselves, so they get a notice with a link to the download page instead.
 #ifdef Q_OS_MAC
 #if defined(SPARKLE_ENABLED)
         m_updater.reset(new MacSparkleUpdater());
+#else
+        m_updater.reset(new KubikUpdateNotice(m_mainWindow, m_dataPath));
 #endif
 #else
-        m_updater.reset(new PrismExternalUpdater(m_mainWindow, m_rootPath, m_dataPath));
+        if (!qEnvironmentVariableIsEmpty("APPIMAGE")) {
+            m_updater.reset(new KubikUpdateNotice(m_mainWindow, m_dataPath));
+        } else {
+            m_updater.reset(new PrismExternalUpdater(m_mainWindow, m_rootPath, m_dataPath));
+        }
 #endif
         qDebug() << "<> Updater started.";
     }

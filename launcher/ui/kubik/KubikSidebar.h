@@ -22,6 +22,7 @@
 
 class KubikProfileCard;
 class QButtonGroup;
+class QFrame;
 class QLabel;
 class QMenu;
 class QPushButton;
@@ -46,12 +47,19 @@ class KubikSidebar : public QFrame {
 
     void setCurrentPage(Page page);
     void setMoreMenu(QMenu* menu);
+    /**
+     * A newer KubikLauncher to download, above the profile card (KubikUpdateNotice, where the
+     * launcher cannot install updates itself). An empty version hides it.
+     */
+    void setUpdateNotice(const QString& version);
 
    signals:
     void pageRequested(int page);
     void settingsRequested();
     /** The profile card's "Manage profiles…". */
     void profilesRequested();
+    /** The update notice was closed: this version should not be shown again. */
+    void updateNoticeDismissed(const QString& version);
 
    protected:
     void changeEvent(QEvent* event) override;
@@ -66,4 +74,9 @@ class KubikSidebar : public QFrame {
     QPushButton* m_settings;
     QPushButton* m_more;
     QMenu* m_moreMenu = nullptr;
+    QFrame* m_update;
+    QLabel* m_updateText;
+    QPushButton* m_updateDownload;
+    QPushButton* m_updateClose;
+    QString m_updateVersion;
 };

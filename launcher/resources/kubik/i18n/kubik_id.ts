@@ -526,6 +526,18 @@ untuk detail.</translation>
 <context>
     <name>KubikSidebar</name>
     <message>
+        <source>KubikLauncher %1 is out.</source>
+        <translation>KubikLauncher %1 udah keluar.</translation>
+    </message>
+    <message>
+        <source>Download</source>
+        <translation>Unduh</translation>
+    </message>
+    <message>
+        <source>Hide until the next version</source>
+        <translation>Sembunyikan sampai versi berikutnya</translation>
+    </message>
+    <message>
         <source>Home</source>
         <translation>Beranda</translation>
     </message>
@@ -1141,8 +1153,8 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <translation>Nggak perlu cari mod!</translation>
     </message>
     <message>
-        <source>Open source!</source>
-        <translation>Open source!</translation>
+        <source>Windows &amp; macOS!</source>
+        <translation>Windows &amp; macOS!</translation>
     </message>
     <message>
         <source>No kubik.gg account yet? Create one</source>
@@ -1979,6 +1991,41 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
     <message>
         <source>Press %1, type %2 as the %3, then %4. Play it with %5.</source>
         <translation>Tekan %1, isi %3 dengan %2, lalu %4. Mainnya pakai %5.</translation>
+    </message>
+</context>
+<context>
+    <name>KubikUpdateNotice</name>
+    <message>
+        <source>Update check failed</source>
+        <translation>Gagal cek update</translation>
+    </message>
+    <message>
+        <source>KubikLauncher could not reach kubik.gg to check for a new version. Try again later.</source>
+        <translation>KubikLauncher nggak bisa nyambung ke kubik.gg buat cek versi baru. Coba lagi nanti.</translation>
+    </message>
+    <message>
+        <source>No update</source>
+        <translation>Belum ada update</translation>
+    </message>
+    <message>
+        <source>You have the newest version of KubikLauncher (%1).</source>
+        <translation>Kamu udah pakai KubikLauncher versi terbaru (%1).</translation>
+    </message>
+    <message>
+        <source>Update available</source>
+        <translation>Ada update</translation>
+    </message>
+    <message>
+        <source>KubikLauncher %1 is out. Download it from kubik.gg and install it over this one: your instances and settings stay.</source>
+        <translation>KubikLauncher %1 udah keluar. Unduh dari kubik.gg terus pasang di atas yang ini: instance dan pengaturanmu tetap aman.</translation>
+    </message>
+    <message>
+        <source>Download</source>
+        <translation>Unduh</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Nanti</translation>
     </message>
 </context>
 </TS>

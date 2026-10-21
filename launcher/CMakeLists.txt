@@ -952,6 +952,8 @@ SET(LAUNCHER_SOURCES
     ui/kubik/KubikSignInPage.h
     ui/kubik/KubikTitle.cpp
     ui/kubik/KubikTitle.h
+    ui/kubik/KubikUpdateNotice.cpp
+    ui/kubik/KubikUpdateNotice.h
     ui/kubik/KubikFlowLayout.cpp
     ui/kubik/KubikFlowLayout.h
 

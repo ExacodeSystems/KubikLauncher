@@ -19,18 +19,22 @@
 #include "KubikSidebar.h"
 
 #include <QButtonGroup>
+#include <QDesktopServices>
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QIcon>
+#include <QLabel>
 #include <QMenu>
 #include <QPainter>
 #include <QPushButton>
+#include <QUrl>
 #include <QVBoxLayout>
 
 #include "Application.h"
 #include "kubik/KubikWindowChrome.h"
 #include "ui/kubik/KubikPaint.h"
 #include "ui/kubik/KubikProfileCard.h"
+#include "ui/kubik/KubikUpdateNotice.h"
 
 namespace {
 
@@ -127,6 +131,41 @@ KubikSidebar::KubikSidebar(QWidget* parent) : QFrame(parent), m_pages(new QButto
         }
     });
 
+    // A newer KubikLauncher, where the launcher cannot install it itself (macOS, an AppImage). Filled
+    // in by KubikUpdateNotice; hidden until there is one.
+    m_update = new QFrame(this);
+    m_update->setObjectName("kubikUpdateNotice");
+    m_updateText = new QLabel(m_update);
+    m_updateText->setObjectName("kubikUpdateText");
+    m_updateText->setWordWrap(true);
+    m_updateClose = new QPushButton(QStringLiteral("×"), m_update);
+    m_updateClose->setObjectName("kubikUpdateClose");
+    m_updateClose->setProperty("kubikRole", "quiet");
+    m_updateClose->setCursor(Qt::PointingHandCursor);
+    m_updateDownload = new QPushButton(m_update);
+    m_updateDownload->setProperty("kubikRole", "primary");
+    m_updateDownload->setCursor(Qt::PointingHandCursor);
+    auto* updateTop = new QHBoxLayout();
+    updateTop->setSpacing(4);
+    updateTop->addWidget(m_updateText, 1);
+    updateTop->addWidget(m_updateClose, 0, Qt::AlignTop);
+    auto* updateLayout = new QVBoxLayout(m_update);
+    updateLayout->setContentsMargins(12, 10, 8, 14);
+    updateLayout->setSpacing(8);
+    updateLayout->addLayout(updateTop);
+    updateLayout->addWidget(m_updateDownload, 0, Qt::AlignLeft);
+    auto* updateRow = new QHBoxLayout();
+    updateRow->setContentsMargins(12, 10, 12, 0);
+    updateRow->addWidget(m_update);
+    layout->addLayout(updateRow);
+    m_update->hide();
+    connect(m_updateDownload, &QPushButton::clicked, this,
+            [] { QDesktopServices::openUrl(QUrl(KubikUpdateNotice::downloadPage())); });
+    connect(m_updateClose, &QPushButton::clicked, this, [this] {
+        m_update->hide();
+        emit updateNoticeDismissed(m_updateVersion);
+    });
+
     // Who plays, on a card of its own under everything else, so it reads as an account and not a page.
     m_profile = new KubikProfileCard(this);
     auto* profileRow = new QHBoxLayout();
@@ -151,6 +190,13 @@ void KubikSidebar::setMoreMenu(QMenu* menu)
     m_moreMenu = menu;
 }
 
+void KubikSidebar::setUpdateNotice(const QString& version)
+{
+    m_updateVersion = version;
+    retranslate();
+    m_update->setVisible(!version.isEmpty());
+}
+
 void KubikSidebar::retranslate()
 {
     m_servers->setText(tr("Servers"));
@@ -158,6 +204,10 @@ void KubikSidebar::retranslate()
     m_settings->setText(tr("Settings"));
     // "&&": a lone "&" in a button's text marks a keyboard mnemonic and is not shown.
     m_more->setText(tr("Help && more"));
+    m_updateText->setText(tr("KubikLauncher %1 is out.").arg(m_updateVersion));
+    m_updateDownload->setText(tr("Download"));
+    m_updateClose->setToolTip(tr("Hide until the next version"));
+    m_updateClose->setAccessibleName(tr("Hide until the next version"));
 }
 
 void KubikSidebar::changeEvent(QEvent* event)

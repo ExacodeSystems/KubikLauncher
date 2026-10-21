@@ -14,7 +14,8 @@ set(Launcher_CommonName "KubikLauncher")
 set(Launcher_DisplayName "KubikLauncher")
 set(Launcher_AppID "gg.kubik.KubikLauncher")
 set(Launcher_Domain "kubik.gg")
-set(Launcher_Git "https://github.com/ExacodeSystems/KubikLauncher")
+# Where the source code is: About links here (the GPL's offer), next to every version's downloads.
+set(Launcher_Git "https://kubik.gg/launcher/versions")
 
 set(Launcher_Name "${Launcher_CommonName}" PARENT_SCOPE)
 set(Launcher_DisplayName "${Launcher_DisplayName}" PARENT_SCOPE)

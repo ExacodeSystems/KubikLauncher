@@ -182,7 +182,7 @@ void KubikSignInPage::retranslate()
 {
     // The same lines as kubik.gg/launcher's title screen; one is picked each time the launcher opens.
     m_splash->setLines(
-        { tr("Free!"), tr("Just press Play!"), tr("Bring your friends!"), tr("Modpacks too!"), tr("No mod hunting!"), tr("Open source!") });
+        { tr("Free!"), tr("Just press Play!"), tr("Bring your friends!"), tr("Modpacks too!"), tr("No mod hunting!"), tr("Windows & macOS!") });
     placeSplash();
     m_cancel->setText(tr("Cancel"));
     m_signUp->setText(tr("No kubik.gg account yet? Create one"));

@@ -22,11 +22,11 @@ KubikLauncher is a mod-first launcher built for servers hosted on kubik.gg, the 
 
 ## Status
 
-KubikLauncher is in early development and has no public release yet. Releases will be published on this repository's [Releases](https://github.com/ExacodeSystems/KubikLauncher/releases) page and linked from [kubik.gg](https://kubik.gg).
+KubikLauncher is in early development and has no public release yet. Every version, with its source code, will be downloadable from [kubik.gg/launcher/versions](https://kubik.gg/launcher/versions), and the launcher updates itself from kubik.gg.
 
 ## Support
 
-- Bugs and feature requests: [GitHub issues](https://github.com/ExacodeSystems/KubikLauncher/issues).
+- Bugs and feature requests: [kubik.gg/contact](https://kubik.gg/contact).
 - Questions about your Kubik server: [kubik.gg](https://kubik.gg) or halo@kubik.gg.
 
 Please don't take KubikLauncher issues to the Prism Launcher project. They don't maintain this fork.

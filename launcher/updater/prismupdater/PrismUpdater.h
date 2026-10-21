@@ -62,7 +62,6 @@ class PrismUpdaterApp : public QApplication {
 
     bool loadPrismVersionFromExe(const QString& exePath);
 
-    void downloadReleasePage(const QString& apiUrl, int page);
     Result<int> parseReleasePage(const QByteArray* response);
 
     bool needUpdate(const GitHubRelease& release) const;
@@ -83,7 +82,6 @@ class PrismUpdaterApp : public QApplication {
     std::optional<QDir> unpackArchive(const QFileInfo& archive);
 
     QFileInfo downloadAsset(const GitHubReleaseAsset& asset);
-    bool callAppImageUpdate();
 
     void moveAndFinishUpdate(const QDir& target);
 
@@ -105,7 +103,8 @@ class PrismUpdaterApp : public QApplication {
     bool m_isFlatpak = false;
     QString m_appimagePath;
     QString m_prismExecutable;
-    QUrl m_prismRepoUrl;
+    // KubikLauncher: kubik.gg's release feed (GET <api>/launcher/v1/releases), not a GitHub repo.
+    QUrl m_releaseFeedUrl;
     Version m_userSelectedVersion;
     bool m_checkOnly;
     bool m_forceUpdate;

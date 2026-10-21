@@ -209,9 +209,6 @@ set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_M
 # Build platform.
 set(Launcher_BUILD_PLATFORM "unknown" CACHE STRING "A short string identifying the platform that this build was built for. Only used to display in the about dialog.")
 
-# Github repo URL with releases for updater
-set(Launcher_UPDATER_GITHUB_REPO "https://github.com/ExacodeSystems/KubikLauncher" CACHE STRING "Base github URL for the updater.")
-
 # Name to help updater identify valid artifacts
 set(Launcher_BUILD_ARTIFACT "" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
 
@@ -223,7 +220,7 @@ set(Launcher_META_URL "https://meta.prismlauncher.org/v1/" CACHE STRING "URL to 
 set(Launcher_IMGUR_CLIENT_ID "" CACHE STRING "Client ID you can get from Imgur when you register an application")
 
 # Bug tracker URL
-set(Launcher_BUG_TRACKER_URL "https://github.com/ExacodeSystems/KubikLauncher/issues" CACHE STRING "URL for the bug tracker.")
+set(Launcher_BUG_TRACKER_URL "https://kubik.gg/contact" CACHE STRING "URL for the bug tracker.")
 
 # Translations Platform URL
 # Empty: KubikLauncher speaks English and Indonesian only, and both are built into the app from
@@ -407,7 +404,8 @@ add_subdirectory(program_info)
 set(Launcher_ENABLE_UPDATER NO)
 set(Launcher_BUILD_UPDATER NO)
 
-if (NOT APPLE AND (NOT Launcher_UPDATER_GITHUB_REPO STREQUAL "" AND NOT Launcher_BUILD_ARTIFACT STREQUAL ""))
+# KubikLauncher: the updater reads kubik.gg's release feed (<api>/launcher/v1/releases), never GitHub.
+if (NOT APPLE AND (NOT Launcher_KUBIK_API_URL STREQUAL "" AND NOT Launcher_BUILD_ARTIFACT STREQUAL ""))
     set(Launcher_BUILD_UPDATER YES)
 endif()
 

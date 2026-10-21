@@ -38,6 +38,9 @@ struct GitHubReleaseAsset {
     QDateTime created_at;
     QDateTime updated_at;
     QString browser_download_url;
+    // KubikLauncher: the file's sha256 (lowercase hex) from kubik.gg's release feed. The updater
+    // refuses to install a download that does not hash to it, and an asset that has none.
+    QString sha256;
 
     bool isValid() { return id > 0; }
 };

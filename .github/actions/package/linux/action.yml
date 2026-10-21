@@ -86,7 +86,8 @@ runs:
           --dst-dir "$INSTALL_APPIMAGE_DIR" \
           "$INSTALL_APPIMAGE_DIR"/bin/* "$QT_PLUGIN_PATH"/*/*.so
 
-        cp ~/bin/AppImageUpdate.AppImage "$INSTALL_APPIMAGE_DIR"/bin/
+        # KubikLauncher: no AppImageUpdate. It updates through GitHub's zsync feed; an AppImage of
+        # KubikLauncher instead shows a notice to download the new one from kubik.gg/launcher.
         # FIXME(@getchoo): gamemode doesn't seem to be very portable with DBus. Find a way to make it work!
         find "$INSTALL_APPIMAGE_DIR" -name '*gamemode*' -exec rm {} +
 
@@ -106,8 +107,8 @@ runs:
           APPIMAGE_DEST="KubikLauncher-Linux-$VERSION-${{ inputs.build-type }}-$APPIMAGE_ARCH.AppImage"
         fi
 
+        # No --updateinformation: that is GitHub's release feed, which KubikLauncher does not use.
         mkappimage \
-          --updateinformation "gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|KubikLauncher-Linux-$APPIMAGE_ARCH.AppImage.zsync" \
           "$INSTALL_APPIMAGE_DIR" \
           "$APPIMAGE_DEST"
 
@@ -146,8 +147,3 @@ runs:
         name: KubikLauncher-${{ runner.os }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage
         path: KubikLauncher-${{ runner.os }}-*${{ env.APPIMAGE_ARCH }}.AppImage
 
-    - name: Upload AppImage Zsync
-      uses: actions/upload-artifact@v7
-      with:
-        name: KubikLauncher-${{ runner.os }}-${{ inputs.version }}-${{ inputs.build-type }}-${{ env.APPIMAGE_ARCH }}.AppImage.zsync
-        path: KubikLauncher-${{ runner.os }}-*${{ env.APPIMAGE_ARCH }}.AppImage.zsync

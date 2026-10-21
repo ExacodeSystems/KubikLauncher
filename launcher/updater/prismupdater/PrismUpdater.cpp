@@ -30,7 +30,9 @@
 
 #include <QAccessible>
 #include <QCommandLineParser>
+#include <QCryptographicHash>
 #include <QDirListing>
+#include <QFile>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QNetworkProxy>
@@ -38,6 +40,7 @@
 #include <QNetworkRequest>
 #include <QProcess>
 #include <QProgressDialog>
+#include <QRegularExpression>
 #include <memory>
 
 #include "DesktopServices.h"
@@ -48,7 +51,6 @@
 #include "Json.h"
 #include "StringUtils.h"
 
-#include "net/RawHeaderProxy.h"
 #include "net/Request.h"
 
 #include "MMCZip.h"
@@ -91,7 +93,7 @@ PrismUpdaterApp::PrismUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
             tr("Use this version as the installed launcher version. (provided because stdout can not be reliably captured on windows)"),
             tr("installed launcher version") },
           { { "I", "install-version" }, "Install a specific version.", tr("version name") },
-          { { "U", "update-url" }, tr("Update from the specified repo."), tr("github repo url") },
+          { { "U", "update-url" }, tr("Update from the specified release feed."), tr("release feed url") },
           { { "c", "check-only" },
             tr("Only check if an update is needed. Exit status 100 if true, 0 if false (or non 0 if there was an error).") },
           { { "p", "pre-release" }, tr("Allow updating to pre-release releases") },
@@ -310,12 +312,22 @@ PrismUpdaterApp::PrismUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
 
     m_prismExecutable = prismExecutable;
 
-    auto prismUpdateUrl = parser.value("update-url");
-    if (prismUpdateUrl.isEmpty()) {
-        prismUpdateUrl = BuildConfig.UPDATER_GITHUB_REPO;
+    // KubikLauncher: releases come from kubik.gg's api, never from GitHub. The launcher passes the
+    // feed URL (with its own api override and the player's language); run by hand, the updater
+    // falls back to KUBIKLAUNCHER_API_URL and then to the api the build was made for.
+    auto releaseFeedUrl = parser.value("update-url");
+    if (releaseFeedUrl.isEmpty()) {
+        auto apiOrigin = QProcessEnvironment::systemEnvironment().value(QStringLiteral("KUBIKLAUNCHER_API_URL"));
+        if (apiOrigin.isEmpty()) {
+            apiOrigin = BuildConfig.KUBIK_API_URL;
+        }
+        while (apiOrigin.endsWith('/')) {
+            apiOrigin.chop(1);
+        }
+        releaseFeedUrl = apiOrigin + QStringLiteral("/launcher/v1/releases");
     }
 
-    m_prismRepoUrl = QUrl::fromUserInput(prismUpdateUrl);
+    m_releaseFeedUrl = QUrl::fromUserInput(releaseFeedUrl);
 
     m_checkOnly = parser.isSet("check-only");
     m_forceUpdate = parser.isSet("force");
@@ -407,7 +419,7 @@ void PrismUpdaterApp::showFatalErrorMessage(const QString& title, const QString&
 
 void PrismUpdaterApp::run()
 {
-    qDebug() << "found" << m_releases.length() << "releases on github";
+    qDebug() << "found" << m_releases.length() << "releases in the feed";
     qDebug() << "loading exe at" << m_prismExecutable;
 
     if (m_printOnly) {
@@ -459,12 +471,17 @@ void PrismUpdaterApp::run()
                                                                         "supported when running the flatpak version of KubikLauncher."));
         return;
     }
+    // KubikLauncher: an AppImage replaces itself through AppImageUpdate and GitHub's zsync feed in
+    // Prism. Neither exists here, so a newer version is downloaded from the site, like on macOS (the
+    // launcher shows that notice itself; see KubikUpdateNotice).
     if (m_isAppimage) {
-        bool result = true;
         if (needUpdateVal) {
-            result = callAppImageUpdate();
+            showFatalErrorMessage(tr("Download the new version"),
+                                  tr("KubikLauncher %1 is out. Download the new AppImage from https://kubik.gg/launcher.")
+                                      .arg(latest.tag_name));
+            return;
         }
-        exit(result ? 0 : 1);
+        exit(0);
         return;
     }
 
@@ -482,7 +499,7 @@ void PrismUpdaterApp::run()
             if (!found) {
                 showFatalErrorMessage(
                     "No release for version!",
-                    QString("Can not find a github release for specified version %1").arg(m_userSelectedVersion.toString()));
+                    QString("Can not find a release for specified version %1").arg(m_userSelectedVersion.toString()));
                 return;
             }
         } else if (m_selectUI) {
@@ -756,7 +773,7 @@ void PrismUpdaterApp::performUpdate(const GitHubRelease& release)
     GitHubReleaseAsset selectedAsset;
     if (validAssets.isEmpty()) {
         showFatalErrorMessage(tr("No Valid Release Assets"),
-                              tr("Github release %1 has no valid assets for this platform: %2")
+                              tr("Release %1 has no file for this platform: %2")
                                   .arg(release.tag_name)
                                   .arg(tr("%1 portable: %2").arg(BuildConfig.BUILD_ARTIFACT).arg(m_isPortable ? tr("yes") : tr("no"))));
         return;
@@ -773,10 +790,38 @@ void PrismUpdaterApp::performUpdate(const GitHubRelease& release)
     }
 
     qDebug() << "will install" << selectedAsset;
+    // KubikLauncher: nothing is installed without a checksum to hold it to. The feed carries one
+    // for every file it offers; an asset without one is refused before anything is downloaded.
+    static const QRegularExpression sha256Pattern(QStringLiteral("^[0-9a-f]{64}$"));
+    if (!sha256Pattern.match(selectedAsset.sha256).hasMatch()) {
+        showFatalErrorMessage(tr("Cannot Verify the Download"),
+                              tr("Release %1 does not say what %2 should hash to, so it will not be installed.")
+                                  .arg(release.tag_name, selectedAsset.name));
+        return;
+    }
+
     auto file = downloadAsset(selectedAsset);
 
     if (!file.exists()) {
         showFatalErrorMessage(tr("Failed to Download"), tr("Failed to download the selected asset."));
+        return;
+    }
+
+    // Hashed again here, from the file that is about to be installed: not the download task's word
+    // for it, and not whatever an earlier run left at the same path.
+    QFile downloaded(file.absoluteFilePath());
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    if (!downloaded.open(QIODevice::ReadOnly) || !hash.addData(&downloaded)) {
+        showFatalErrorMessage(tr("Failed to Download"), tr("The downloaded file could not be read."));
+        return;
+    }
+    downloaded.close();
+    const auto actual = QString::fromLatin1(hash.result().toHex());
+    if (actual != selectedAsset.sha256) {
+        qDebug() << "checksum mismatch for" << selectedAsset.name << "expected" << selectedAsset.sha256 << "got" << actual;
+        QFile::remove(file.absoluteFilePath());
+        showFatalErrorMessage(tr("Download Did Not Match"),
+                              tr("%1 did not match its checksum, so it was not installed. Try again later.").arg(selectedAsset.name));
         return;
     }
 
@@ -789,6 +834,9 @@ QFileInfo PrismUpdaterApp::downloadAsset(const GitHubReleaseAsset& asset)
     auto fileUrl = QUrl(asset.browser_download_url);
     auto outFilePath = FS::PathCombine(tempDir, fileUrl.fileName());
 
+    // KubikLauncher: never install a file an earlier run left at this path.
+    QFile::remove(outFilePath);
+
     qDebug() << "downloading" << fileUrl << "to" << outFilePath;
     auto download = Net::Request::makeFile(fileUrl, outFilePath);
     download->setNetwork(m_network.get());
@@ -797,24 +845,15 @@ QFileInfo PrismUpdaterApp::downloadAsset(const GitHubReleaseAsset& asset)
 
     progressDialog.execWithTask(download.get());
 
+    if (!download->wasSuccessful()) {
+        qDebug() << "download failed:" << download->failReason();
+        QFile::remove(outFilePath);
+        return QFileInfo();
+    }
     qDebug() << "download complete";
 
     QFileInfo outFile(outFilePath);
     return outFile;
-}
-
-bool PrismUpdaterApp::callAppImageUpdate()
-{
-    auto appimagePath = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
-    QProcess proc = QProcess();
-    qDebug() << "Calling: AppImageUpdate" << appimagePath;
-    proc.setProgram(FS::PathCombine(m_rootPath, "bin", "AppImageUpdate.AppImage"));
-    proc.setArguments({ appimagePath });
-    auto result = proc.startDetached();
-    if (!result) {
-        qDebug() << "Failed to start AppImageUpdate reason:" << proc.errorString();
-    }
-    return result;
 }
 
 void PrismUpdaterApp::clearUpdateLog()
@@ -1184,47 +1223,27 @@ bool PrismUpdaterApp::loadPrismVersionFromExe(const QString& exePath)
 
 void PrismUpdaterApp::loadReleaseList()
 {
-    auto githubRepo = m_prismRepoUrl;
-    if (githubRepo.host() != "github.com") {
-        fail("updating from a non github url is not supported");
+    // KubikLauncher: one GET of kubik.gg's release feed (GET <api>/launcher/v1/releases), which
+    // answers every published release at once in the shape parseReleasePage reads. Never GitHub,
+    // never paged. https only, except a loopback api while developing.
+    const auto feedUrl = m_releaseFeedUrl;
+    const bool loopback = feedUrl.host() == QLatin1String("localhost") || feedUrl.host() == QLatin1String("127.0.0.1");
+    if (feedUrl.scheme() != QLatin1String("https") && !(loopback && feedUrl.scheme() == QLatin1String("http"))) {
+        fail(QString("the release feed must be https: %1").arg(feedUrl.toString()));
         return;
     }
 
-    auto pathParts = githubRepo.path().split('/');
-    pathParts.removeFirst();  // empty segment from leading /
-    auto repoOwner = pathParts.takeFirst();
-    auto repoName = pathParts.takeFirst();
-    auto apiUrl = QString("https://api.github.com/repos/%1/%2/releases").arg(repoOwner, repoName);
-
-    qDebug() << "Fetching release list from" << apiUrl;
-
-    downloadReleasePage(apiUrl, 1);
-}
-
-void PrismUpdaterApp::downloadReleasePage(const QString& apiUrl, int page)
-{
-    int perPage = 30;
-    auto pageUrl = QString("%1?per_page=%2&page=%3").arg(apiUrl).arg(QString::number(perPage)).arg(QString::number(page));
-    auto [download, response] = Net::Request::makeByteArray(pageUrl);
+    qDebug() << "Fetching release list from" << feedUrl;
+    auto [download, response] = Net::Request::makeByteArray(feedUrl);
     download->setNetwork(m_network.get());
-    m_currentUrl = pageUrl;
+    m_currentUrl = feedUrl.toString();
 
-    auto githubApiHeaders = std::make_unique<Net::RawHeaderProxy>();
-    githubApiHeaders->addHeaders({
-        { .headerName = "Accept", .headerValue = "application/vnd.github+json" },
-        { .headerName = "X-GitHub-Api-Version", .headerValue = "2022-11-28" },
-    });
-    download->addHeaderProxy(std::move(githubApiHeaders));
-
-    connect(download.get(), &Net::Request::succeeded, this, [this, response, perPage, apiUrl, page]() {
+    connect(download.get(), &Net::Request::succeeded, this, [this, response]() {
         auto numFound = parseReleasePage(response);
         if (!numFound) {
-            auto errMsg = QString("Failed to parse releases from github: %1\n%2")
-                              .arg(numFound.error())
-                              .arg(QString::fromStdString(response->toStdString()));
-            fail(errMsg);
-        } else if (!(numFound.value() < perPage)) {  // there may be more, fetch next page
-            downloadReleasePage(apiUrl, page + 1);
+            fail(QString("Failed to parse the release feed: %1\n%2")
+                     .arg(numFound.error())
+                     .arg(QString::fromStdString(response->toStdString())));
         } else {
             run();
         }
@@ -1274,6 +1293,8 @@ Result<int> PrismUpdaterApp::parseReleasePage(const QByteArray* response)
             TRY_INTO(asset.created_at, Json::requireString(assetObj, "created_at").and_then(toDate))
             TRY_INTO(asset.updated_at, Json::requireString(assetObj, "updated_at").and_then(toDate))
             TRY_INTO(asset.browser_download_url, Json::requireString(assetObj, "browser_download_url"))
+            // Optional here so one bad row cannot hide the whole list; required before install.
+            asset.sha256 = assetObj["sha256"].toString().toLower();
             release.assets.append(asset);
         }
         m_releases.append(release);

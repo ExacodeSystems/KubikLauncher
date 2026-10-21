@@ -24,9 +24,9 @@
     <release version="@Launcher_VERSION_NAME@" date="@Launcher_BUILD_TIMESTAMP@"></release>
   </releases>
   <url type="homepage">https://kubik.gg/</url>
-  <url type="bugtracker">https://github.com/ExacodeSystems/KubikLauncher/issues</url>
+  <url type="bugtracker">https://kubik.gg/contact</url>
   <url type="help">https://kubik.gg/guides</url>
-  <url type="vcs-browser">https://github.com/ExacodeSystems/KubikLauncher</url>
+  <url type="vcs-browser">https://kubik.gg/launcher/versions</url>
   <content_rating type="oars-1.1">
     <content_attribute id="violence-fantasy">moderate</content_attribute>
     <content_attribute id="social-chat">intense</content_attribute>

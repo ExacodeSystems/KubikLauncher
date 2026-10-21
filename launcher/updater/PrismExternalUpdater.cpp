@@ -34,9 +34,27 @@
 
 #include "StringUtils.h"
 
+#include "Application.h"
 #include "BuildConfig.h"
+#include "kubik/KubikApi.h"
+#include "translations/TranslationsModel.h"
 
 #include "ui/dialogs/UpdateAvailableDialog.h"
+
+namespace {
+
+/**
+ * KubikLauncher: where the updater reads releases. kubik.gg's api (with the same dev override as the
+ * rest of the launcher), in the player's language so the update window's notes are theirs. Never a
+ * GitHub repo.
+ */
+QString releaseFeedUrl()
+{
+    const bool indonesian = APPLICATION->translations()->selectedLanguage().startsWith(QStringLiteral("id"));
+    return Kubik::apiOrigin() + QStringLiteral("/launcher/v1/releases?lang=") + (indonesian ? "id" : "en");
+}
+
+}  // namespace
 
 class PrismExternalUpdater::Private {
    public:
@@ -116,7 +134,7 @@ void PrismExternalUpdater::checkForUpdates(bool triggeredByUser) const
     exeName = QString("bin/%1").arg(exeName);
 #endif
 
-    QStringList args = { "--check-only", "--dir", priv->dataDir.absolutePath(), "--debug" };
+    QStringList args = { "--check-only", "--dir", priv->dataDir.absolutePath(), "--debug", "--update-url", releaseFeedUrl() };
     if (priv->allowBeta) {
         args.append("--pre-release");
     }
@@ -357,7 +375,7 @@ void PrismExternalUpdater::performUpdate(const QString& versionTag) const
     exeName = QString("bin/%1").arg(exeName);
 #endif
 
-    QStringList args = { "--dir", priv->dataDir.absolutePath(), "--install-version", versionTag };
+    QStringList args = { "--dir", priv->dataDir.absolutePath(), "--install-version", versionTag, "--update-url", releaseFeedUrl() };
     if (priv->allowBeta) {
         args.append("--pre-release");
     }
