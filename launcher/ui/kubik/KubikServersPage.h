@@ -22,6 +22,7 @@
 #include <QSet>
 #include <QWidget>
 
+class KubikEyebrow;
 class KubikServerDelegate;
 class KubikServerGrid;
 class KubikServerModel;
@@ -107,7 +108,7 @@ class KubikServersPage : public QWidget {
     QLabel* m_heroEyebrow;
     QLabel* m_heroName;
     QLabel* m_heroLine;
-    QLabel* m_heroStatus;
+    KubikEyebrow* m_heroStatus;
     QPushButton* m_heroPlay;
     QPushButton* m_heroOpen;
     QString m_heroId;

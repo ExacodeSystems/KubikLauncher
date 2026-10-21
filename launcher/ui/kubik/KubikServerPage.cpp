@@ -27,7 +27,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPainter>
-#include <QPainterPath>
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
@@ -54,7 +53,9 @@
 #include "ui/kubik/KubikFlowLayout.h"
 #include "ui/kubik/KubikInstancePicker.h"
 #include "ui/kubik/KubikJoinGuide.h"
+#include "ui/kubik/KubikPaint.h"
 #include "ui/kubik/KubikServerTiles.h"
+#include "ui/kubik/KubikTitle.h"
 
 namespace {
 
@@ -112,7 +113,7 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     m_name->setObjectName("kubikPageTitle");
     m_name->setTextFormat(Qt::PlainText);
     m_about = bodyText(content);
-    m_status = new QLabel(content);
+    m_status = new KubikEyebrow(content);
     m_status->setObjectName("kubikPageSubtitle");
     m_refresh = new QPushButton(content);
     m_refresh->setObjectName("kubikStatusRefresh");
@@ -206,7 +207,7 @@ KubikServerPage::KubikServerPage(QWidget* parent) : QWidget(parent)
     m_progressText = bodyText(content, "kubikPageSubtitle");
     m_progress = new QProgressBar(content);
     m_progress->setTextVisible(false);
-    m_progress->setFixedHeight(6);
+    m_progress->setFixedHeight(10);
     m_progress->setMaximumWidth(420);
     m_accountNote = bodyText(content, "kubikPageNote");
 
@@ -378,12 +379,10 @@ void KubikServerPage::setServer(const Kubik::Server& server, const KubikServerLi
     art.setDevicePixelRatio(dpr);
     art.fill(Qt::transparent);
     {
+        // In an inventory slot, the frame every picture of a server or an instance sits in.
         QPainter painter(&art);
-        painter.setRenderHint(QPainter::Antialiasing);
-        QPainterPath shape;
-        shape.addRoundedRect(QRectF(0, 0, ART_SIDE, ART_SIDE), 6, 6);
-        painter.setClipPath(shape);
         KubikServerDelegate::paintArt(&painter, QRect(0, 0, ART_SIDE, ART_SIDE), server, m_live ? &*m_live : nullptr, false);
+        KubikPaint::drawSlotFrame(&painter, QRectF(0, 0, ART_SIDE, ART_SIDE));
     }
     m_art->setPixmap(art);
     m_name->setText(server.name);
@@ -394,9 +393,8 @@ void KubikServerPage::setServer(const Kubik::Server& server, const KubikServerLi
     m_addressLabel->setText(bedrock ? tr("Server address and port") : tr("Server address"));
     m_port->setVisible(bedrock);
     m_port->setText(tr("Port %1").arg(server.port));
-    m_status->setText(QString("<span style=\"color:%1\">●</span>&nbsp;%2")
-                          .arg(KubikServerDelegate::statusColour(server).name(),
-                               KubikServerDelegate::statusLine(server, m_live ? &*m_live : nullptr).toHtmlEscaped()));
+    m_status->setText(KubikServerDelegate::statusLine(server, m_live ? &*m_live : nullptr));
+    m_status->setMarkerColour(KubikServerDelegate::statusColour(server));
 
     showNotice({});
     if (server.unplayable == "bedrock") {

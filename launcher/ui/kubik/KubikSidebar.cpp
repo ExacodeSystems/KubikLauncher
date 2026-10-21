@@ -22,16 +22,60 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QIcon>
-#include <QLabel>
 #include <QMenu>
+#include <QPainter>
 #include <QPushButton>
 #include <QVBoxLayout>
 
 #include "Application.h"
 #include "kubik/KubikWindowChrome.h"
+#include "ui/kubik/KubikPaint.h"
 #include "ui/kubik/KubikProfileCard.h"
 
 namespace {
+
+// The rail's head, top to bottom: a strip of sky for the sun and a cloud (on macOS, below the
+// traffic lights), the lockup, a gap, then the ground and the steps it hangs into the rail with.
+constexpr int SKY_STRIP = 30;
+constexpr int LOCKUP = 36;
+constexpr int LOCKUP_GAP = 12;
+constexpr int DIRT = 14;
+constexpr int STEPS = 16;
+constexpr int ICON = 30;
+constexpr int WORDMARK = 22;
+
+/**
+ * The top of the rail is KubikLauncher's title screen in miniature, as kubik.gg/launcher opens: the
+ * icon and the wordmark in a noon sky with the square sun and a cloud, standing on the ground, whose
+ * stepped underside drops into the rail's dark. The rest of the app is the world under that ground.
+ */
+class RailHead : public QWidget {
+   public:
+    explicit RailHead(QWidget* parent) : QWidget(parent)
+    {
+        setAccessibleName(QStringLiteral("KubikLauncher"));
+        setFixedHeight(KubikWindowChrome::titleBarInset() + SKY_STRIP + LOCKUP + LOCKUP_GAP + KubikPaint::TURF_HEIGHT + DIRT + STEPS);
+    }
+
+   protected:
+    void paintEvent(QPaintEvent* /*event*/) override
+    {
+        QPainter p(this);
+        const qreal groundTop = height() - STEPS - DIRT - KubikPaint::TURF_HEIGHT;
+        KubikPaint::drawDaySky(&p, QRectF(0, 0, width(), groundTop));
+        const int top = KubikWindowChrome::titleBarInset();
+        KubikPaint::drawSprite(&p, KubikPaint::Sprite::Sun, QPointF(width() - 16 - 24, top + 4), 3);
+        KubikPaint::drawSprite(&p, KubikPaint::Sprite::Cloud, QPointF(width() - 112, top + 9), 3, 0.9);
+        KubikPaint::drawGround(&p, QRectF(0, groundTop, width(), KubikPaint::TURF_HEIGHT + DIRT));
+
+        // The lockup: the icon over its hard shadow, then the name.
+        const qreal lockupTop = top + SKY_STRIP;
+        const QRectF icon(16, lockupTop + (LOCKUP - ICON) / 2.0, ICON, ICON);
+        KubikPaint::drawLockupIcon(&p, APPLICATION->logo(), icon);
+        const QSizeF name = KubikPaint::wordmarkSize(WORDMARK);
+        KubikPaint::drawWordmark(&p, QPointF(icon.right() + 9, lockupTop + (LOCKUP - name.height()) / 2), WORDMARK);
+    }
+};
 
 QPushButton* railButton(const QString& icon, QWidget* parent)
 {
@@ -51,21 +95,12 @@ KubikSidebar::KubikSidebar(QWidget* parent) : QFrame(parent), m_pages(new QButto
     setFixedWidth(236);
 
     auto* layout = new QVBoxLayout(this);
-    // On macOS the traffic lights sit in the top strip of the rail.
-    layout->setContentsMargins(0, 18 + KubikWindowChrome::titleBarInset(), 0, 14);
+    // The head runs to the window's top edge: on macOS the traffic lights sit in its sky.
+    layout->setContentsMargins(0, 0, 0, 14);
     layout->setSpacing(2);
 
-    auto* brand = new QHBoxLayout();
-    brand->setContentsMargins(18, 0, 18, 22);
-    brand->setSpacing(10);
-    auto* mark = new QLabel(this);
-    mark->setPixmap(APPLICATION->logo().pixmap(30, 30));
-    auto* name = new QLabel(QStringLiteral("Kubik"), this);
-    name->setObjectName("kubikBrandName");
-    brand->addWidget(mark);
-    brand->addWidget(name);
-    brand->addStretch();
-    layout->addLayout(brand);
+    layout->addWidget(new RailHead(this));
+    layout->addSpacing(8);
 
     m_servers = railButton("server", this);
     m_instances = railButton("minecraft", this);

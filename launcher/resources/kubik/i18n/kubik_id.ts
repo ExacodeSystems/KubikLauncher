@@ -1121,6 +1121,30 @@ KubikLauncher saat ini hanya mendukung tautan modpack seperti modrinth://modpack
         <translation>Batal</translation>
     </message>
     <message>
+        <source>Free!</source>
+        <translation>Gratis!</translation>
+    </message>
+    <message>
+        <source>Just press Play!</source>
+        <translation>Tinggal tekan Main!</translation>
+    </message>
+    <message>
+        <source>Bring your friends!</source>
+        <translation>Ajak temen mabar!</translation>
+    </message>
+    <message>
+        <source>Modpacks too!</source>
+        <translation>Modpack juga bisa!</translation>
+    </message>
+    <message>
+        <source>No mod hunting!</source>
+        <translation>Nggak perlu cari mod!</translation>
+    </message>
+    <message>
+        <source>Open source!</source>
+        <translation>Open source!</translation>
+    </message>
+    <message>
         <source>No kubik.gg account yet? Create one</source>
         <translation>Belum punya akun kubik.gg? Bikin dulu</translation>
     </message>

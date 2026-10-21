@@ -34,6 +34,10 @@ class SetupWizard : public QWizard {
     BaseWizardPage* getBasePage(int id);
     BaseWizardPage* getCurrentBasePage();
 
+   protected:
+    void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+
    private slots:
     void pageChanged(int id);
 

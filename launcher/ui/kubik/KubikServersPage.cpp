@@ -30,7 +30,6 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QStackedWidget>
@@ -45,7 +44,9 @@
 #include "kubik/KubikProfiles.h"
 #include "kubik/KubikWindowChrome.h"
 #include "ui/kubik/KubikInstanceInfo.h"
+#include "ui/kubik/KubikPaint.h"
 #include "ui/kubik/KubikServerTiles.h"
+#include "ui/kubik/KubikTitle.h"
 #include "ui/pages/instance/ServerPingTask.h"
 
 namespace {
@@ -165,15 +166,14 @@ KubikServersPage::KubikServersPage(QWidget* parent)
     m_hero->setObjectName("kubikHero");
     m_heroArt = new QLabel(m_hero);
     m_heroArt->setFixedSize(HERO_ART, HERO_ART);
-    m_heroEyebrow = new QLabel(m_hero);
-    m_heroEyebrow->setObjectName("kubikStepLabel");
+    m_heroEyebrow = new KubikEyebrow(m_hero);
     m_heroName = new QLabel(m_hero);
     m_heroName->setObjectName("kubikHeroName");
     m_heroName->setTextFormat(Qt::PlainText);
     m_heroLine = new QLabel(m_hero);
     m_heroLine->setObjectName("kubikPageBody");
     m_heroLine->setTextFormat(Qt::PlainText);
-    m_heroStatus = new QLabel(m_hero);
+    m_heroStatus = new KubikEyebrow(m_hero);
     m_heroStatus->setObjectName("kubikPageSubtitle");
     m_heroPlay = new QPushButton(m_hero);
     m_heroPlay->setObjectName("kubikHeroPlay");
@@ -397,18 +397,14 @@ void KubikServersPage::updateHero()
     art.fill(Qt::transparent);
     {
         QPainter painter(&art);
-        painter.setRenderHint(QPainter::Antialiasing);
-        QPainterPath shape;
-        shape.addRoundedRect(QRectF(0, 0, HERO_ART, HERO_ART), 8, 8);
-        painter.setClipPath(shape);
         KubikServerDelegate::paintArt(&painter, QRect(0, 0, HERO_ART, HERO_ART), *last, live, false);
+        KubikPaint::drawSlotFrame(&painter, QRectF(0, 0, HERO_ART, HERO_ART));
     }
     m_heroArt->setPixmap(art);
     m_heroName->setText(last->name);
     m_heroLine->setText(QStringLiteral("%1 · %2").arg(KubikServerDelegate::describe(*last), KubikInstanceInfo::playedAgo(lastMs)));
-    m_heroStatus->setText(
-        QString("<span style=\"color:%1\">●</span>&nbsp;%2")
-            .arg(KubikServerDelegate::statusColour(*last).name(), KubikServerDelegate::statusLine(*last, live).toHtmlEscaped()));
+    m_heroStatus->setText(KubikServerDelegate::statusLine(*last, live));
+    m_heroStatus->setMarkerColour(KubikServerDelegate::statusColour(*last));
     m_heroPlay->setVisible(last->profile.has_value() && !last->locked);
 }
 

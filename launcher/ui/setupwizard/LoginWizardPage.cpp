@@ -9,12 +9,14 @@
 #include "settings/SettingsObject.h"
 #include "ui/kubik/KubikAccounts.h"
 #include "ui/kubik/KubikConfirmDialog.h"
+#include "ui/kubik/KubikTitle.h"
 
 LoginWizardPage::LoginWizardPage(QWidget* parent) : BaseWizardPage(parent)
 {
     setObjectName(QStringLiteral("loginPage"));
 
-    m_step = new QLabel(this);
+    // "Step 2 of 2", led by the eyebrow's block.
+    m_step = new KubikEyebrow(this);
     m_step->setObjectName("kubikStepLabel");
     m_title = new QLabel(this);
     m_title->setObjectName("kubikPageTitle");

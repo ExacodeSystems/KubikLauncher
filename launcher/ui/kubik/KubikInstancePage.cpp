@@ -23,6 +23,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
+#include <QPainter>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QStackedWidget>
@@ -33,6 +34,7 @@
 #include "Application.h"
 #include "InstanceList.h"
 #include "icons/IconList.h"
+#include "kubik/KubikBrand.h"
 #include "kubik/KubikWindowChrome.h"
 #include "minecraft/MinecraftInstance.h"
 #include "ui/kubik/KubikInstanceAdvanced.h"
@@ -40,6 +42,7 @@
 #include "ui/kubik/KubikInstanceLogs.h"
 #include "ui/kubik/KubikInstanceMods.h"
 #include "ui/kubik/KubikInstanceOverview.h"
+#include "ui/kubik/KubikPaint.h"
 
 namespace {
 
@@ -289,7 +292,19 @@ void KubikInstancePage::refresh()
     if (!instance) {
         return;
     }
-    m_art->setPixmap(APPLICATION->icons()->getIcon(instance->iconKey()).pixmap(ICON_SIDE, ICON_SIDE));
+    // The icon in an inventory slot, as a server's picture is on its page.
+    const qreal dpr = devicePixelRatioF();
+    QPixmap art(QSize(ART_SIDE, ART_SIDE) * dpr);
+    art.setDevicePixelRatio(dpr);
+    art.fill(KubikBrand::color("void.raised"));
+    {
+        QPainter painter(&art);
+        QRect icon(0, 0, ICON_SIDE, ICON_SIDE);
+        icon.moveCenter(QRect(0, 0, ART_SIDE, ART_SIDE).center());
+        painter.drawPixmap(icon, APPLICATION->icons()->getIcon(instance->iconKey()).pixmap(QSize(ICON_SIDE, ICON_SIDE), dpr));
+        KubikPaint::drawSlotFrame(&painter, QRectF(0, 0, ART_SIDE, ART_SIDE));
+    }
+    m_art->setPixmap(art);
     m_name->setText(instance->name());
 
     const auto summary = KubikInstanceInfo::instance()->summary(instance);

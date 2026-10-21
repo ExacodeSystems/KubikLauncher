@@ -30,6 +30,7 @@
 #include "ui/kubik/KubikServerTiles.h"
 
 class BaseInstance;
+class KubikEyebrow;
 class KubikJoinGuide;
 class KubikPlay;
 class QFrame;
@@ -118,7 +119,7 @@ class KubikServerPage : public QWidget {
     QLabel* m_art;
     QLabel* m_name;
     QLabel* m_about;
-    QLabel* m_status;
+    KubikEyebrow* m_status;
     QPushButton* m_refresh;
     bool m_checking = false;
     QFrame* m_addressCard;

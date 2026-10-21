@@ -5,12 +5,14 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include "ui/kubik/KubikLanguagePicker.h"
+#include "ui/kubik/KubikTitle.h"
 
 LanguageWizardPage::LanguageWizardPage(QWidget* parent) : BaseWizardPage(parent)
 {
     setObjectName(QStringLiteral("languagePage"));
 
-    m_step = new QLabel(this);
+    // "Step 1 of 2", led by the eyebrow's block.
+    m_step = new KubikEyebrow(this);
     m_step->setObjectName("kubikStepLabel");
     m_title = new QLabel(this);
     m_title->setObjectName("kubikPageTitle");

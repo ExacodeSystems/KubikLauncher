@@ -5,16 +5,26 @@
  * colours by their Tailwind names (void.panel, grass.deep, ...) and the three
  * bundled faces (font.display, font.body, font.mono).
  *
- * The rules, and why:
- *   - No borders, no rules, no bevels. Surfaces are told apart by a step in
- *     tone: void (the ground) < void.raised (the rail) < void.panel (tiles,
- *     fields, quiet buttons) < block (hover). A line between two things is
- *     replaced by a change of tone or by space.
- *   - One accent. Grass fills the primary action (Play, "New instance", the
- *     default button) and marks the current page. Heart is for Stop and Delete.
- *   - The one outline that survives is focus: a grass ring on whatever the
- *     keyboard is on, because without it the app cannot be used without a mouse.
- *   - Corners: 4px on controls, 6px on tiles and panels.
+ * The look is kubik.gg/launcher's: everything is a block. The rules, and why:
+ *   - A surface is a block: 2-3px corners, a 1px border, and a solid lip under
+ *     it. Qt Style Sheets have no box-shadow, so the lip is a 4px bottom border
+ *     in a darker shade; the website never blurs a shadow either, so nothing is
+ *     lost. Painted things (tiles, cards, the title screen) draw the same
+ *     pieces with KubikPaint.
+ *   - A button is a block you press. While it is held, 3px of its lip become
+ *     top margin, so the face sinks into the lip and nothing around it moves.
+ *     Every state keeps the same outer height for the same reason.
+ *   - A field, a log or a progress bar is a slot: recessed, its top and left
+ *     edges in shadow.
+ *   - One accent. Grass fills the primary action (Play, the default button)
+ *     and marks the current page; its lip is grass's own deep shade. Heart is
+ *     for Stop and Delete.
+ *   - Focus is a 2px ring: grass on dark buttons, bone on grass ones, because
+ *     without it the app cannot be used without a mouse.
+ *   - The noon sky is for the title screens alone: the first-run wizard
+ *     (SetupWizard), the sign-in page (#kubikTitleScreen) and the rail's head,
+ *     each painted with KubikPaint. The pages a player works in stay
+ *     underground-dark.
  *
  * Combo boxes and spin boxes keep Fusion's drawing (giving them a QSS border
  * makes Qt stop drawing their arrows); KubikTheme's palette makes their Fusion
@@ -32,68 +42,118 @@ QFrame {
 
 QToolTip {
     color: @bone@;
-    background-color: @block@;
-    border: none;
+    background-color: @void.panel@;
+    border: 1px solid @block.edge@;
     padding: 5px 8px;
 }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 
+/* The plain block: dark, edged in block.edge, on a near-black lip. Outer height 33px in every state. */
 QPushButton {
     color: @bone@;
     background-color: @void.panel@;
-    border: none;
-    border-radius: 4px;
-    padding: 7px 16px;
+    border: 1px solid @block.edge@;
+    border-top-color: #3d4b4a;
+    border-bottom: 4px solid @block.lip@;
+    border-radius: 2px;
+    padding: 5px 15px 3px 15px;
     min-height: 20px;
     font-family: "@font.display@";
     font-weight: 600;
 }
 
 QPushButton:hover {
+    color: #ffffff;
     background-color: @block@;
-}
-
-QPushButton:pressed,
-QPushButton:checked {
-    background-color: @void.raised@;
 }
 
 QPushButton:focus {
     border: 2px solid @grass.deep@;
-    padding: 5px 14px;
+    border-bottom: 4px solid @block.lip@;
+    padding: 4px 14px 3px 14px;
 }
 
-/* The default action: the one filled green thing on a screen. */
+/* Held (or toggled on): the face sinks 3px into its lip. */
+QPushButton:pressed,
+QPushButton:checked {
+    margin-top: 3px;
+    border-bottom-width: 1px;
+    background-color: @void.raised@;
+}
+
+QPushButton:focus:pressed,
+QPushButton:focus:checked {
+    margin-top: 3px;
+    border-bottom-width: 1px;
+}
+
+/* The default action: the one grass block on a screen, lit along its top, on grass's deep lip. */
 QPushButton:default,
 QPushButton[kubikRole="primary"] {
     color: @void@;
-    background-color: @grass@;
+    background-color: @grass.mid@;
+    border: none;
+    border-top: 1px solid #45c89d;
+    border-bottom: 4px solid #046a4d;
+    padding: 5px 16px 3px 16px;
 }
 
 QPushButton:default:hover,
 QPushButton[kubikRole="primary"]:hover {
-    background-color: @grass.mid@;
+    color: @void@;
+    background-color: @grass@;
+    border-top-color: #61ddb0;
+}
+
+QPushButton:default:focus,
+QPushButton[kubikRole="primary"]:focus {
+    border: 2px solid @bone@;
+    border-bottom: 4px solid #046a4d;
+    padding: 4px 14px 3px 14px;
 }
 
 QPushButton:default:pressed,
 QPushButton[kubikRole="primary"]:pressed {
-    background-color: @grass.deep@;
+    margin-top: 3px;
+    border-bottom-width: 1px;
+    background-color: @grass@;
 }
 
+/* Stop and Delete: the same block in heart, on its own deep lip. */
 QPushButton[kubikRole="danger"] {
     color: @void@;
     background-color: @heart@;
+    border: none;
+    border-top: 1px solid #ff8a8a;
+    border-bottom: 4px solid #8f2424;
+    padding: 5px 16px 3px 16px;
 }
 
 QPushButton[kubikRole="danger"]:hover {
+    color: @void@;
+    background-color: #ff7070;
+}
+
+QPushButton[kubikRole="danger"]:focus {
+    border: 2px solid @bone@;
+    border-bottom: 4px solid #8f2424;
+    padding: 4px 14px 3px 14px;
+}
+
+QPushButton[kubikRole="danger"]:pressed {
+    margin-top: 3px;
+    border-bottom-width: 1px;
     background-color: @heart.deep@;
 }
 
-/* A button that reads as a link: back, "Open folder", rows in a list. */
+/* A button that reads as a link: back, "Open folder", rows in a list. No block, no lip, nothing sinks. */
 QPushButton[kubikRole="quiet"] {
     color: @bone.muted@;
     background-color: transparent;
+    border: none;
+    margin: 0;
+    padding: 6px 14px 7px 14px;
 }
 
 QPushButton[kubikRole="quiet"]:hover {
@@ -101,10 +161,22 @@ QPushButton[kubikRole="quiet"]:hover {
     background-color: @void.panel@;
 }
 
+QPushButton[kubikRole="quiet"]:pressed {
+    margin: 0;
+    border: none;
+    background-color: @void.raised@;
+}
+
+QPushButton[kubikRole="quiet"]:focus {
+    border: 2px solid @grass.deep@;
+    padding: 4px 12px 5px 12px;
+}
+
 /* A quiet button that is the default (Cancel on "Delete …?") keeps its quiet look; only the role decides colour. */
 QPushButton[kubikRole="quiet"]:default {
     color: @bone.muted@;
     background-color: transparent;
+    border: none;
 }
 
 /* A button that is a sentence's link: "How to join", "Show Java arguments". Flush with the text
@@ -112,11 +184,19 @@ QPushButton[kubikRole="quiet"]:default {
 QPushButton[kubikRole="link"] {
     color: @grass@;
     background-color: transparent;
+    border: none;
+    margin: 0;
     padding: 4px 0;
 }
 
 QPushButton[kubikRole="link"]:hover {
     color: @grass.mid@;
+    background-color: transparent;
+}
+
+QPushButton[kubikRole="link"]:pressed {
+    margin: 0;
+    border: none;
     background-color: transparent;
 }
 
@@ -126,10 +206,23 @@ QPushButton[kubikRole="link"]:focus {
     text-decoration: underline;
 }
 
+/* Out of reach: still a block, gone flat and dim. */
 QPushButton:disabled,
-QPushButton:default:disabled {
+QPushButton:default:disabled,
+QPushButton[kubikRole="primary"]:disabled,
+QPushButton[kubikRole="danger"]:disabled {
     color: @bone.faint@;
     background-color: @void.raised@;
+    border: 1px solid @block@;
+    border-bottom: 4px solid @block.lip@;
+    padding: 5px 15px 3px 15px;
+}
+
+QPushButton[kubikRole="quiet"]:disabled,
+QPushButton[kubikRole="link"]:disabled {
+    color: @bone.faint@;
+    background-color: transparent;
+    border: none;
 }
 
 QPushButton::menu-indicator {
@@ -141,7 +234,7 @@ QToolButton {
     color: @bone@;
     background-color: transparent;
     border: none;
-    border-radius: 4px;
+    border-radius: 2px;
     padding: 4px;
 }
 
@@ -154,16 +247,18 @@ QToolButton:checked {
     background-color: @void.panel@;
 }
 
-/* ── Fields ─────────────────────────────────────────────────────────────── */
+/* ── Fields: slots, pressed into the surface ────────────────────────────── */
 
 QLineEdit,
 QPlainTextEdit,
 QTextEdit,
 QTextBrowser {
     color: @bone@;
-    background-color: @void.panel@;
-    border: 2px solid @void.panel@;
-    border-radius: 4px;
+    background-color: @void.raised@;
+    border: 2px solid @block@;
+    border-top-color: @block.deep@;
+    border-left-color: @block.deep@;
+    border-radius: 2px;
     padding: 4px 8px;
     selection-background-color: rgba(52, 211, 153, 0.28);
     selection-color: @bone@;
@@ -172,7 +267,8 @@ QTextBrowser {
 QLineEdit:hover,
 QPlainTextEdit:hover,
 QTextEdit:hover {
-    border-color: @block@;
+    border-right-color: @block.edge@;
+    border-bottom-color: @block.edge@;
 }
 
 QLineEdit:focus,
@@ -185,18 +281,22 @@ QLineEdit:disabled {
     color: @bone.faint@;
 }
 
+/* A progress bar is a slot that fills with grass, square-ended like a block. */
 QProgressBar {
     color: @bone@;
-    background-color: @void.panel@;
-    border: none;
-    border-radius: 4px;
+    background-color: @void@;
+    border: 1px solid @block@;
+    border-top-color: @block.deep@;
+    border-left-color: @block.deep@;
+    border-radius: 2px;
     text-align: center;
     min-height: 8px;
 }
 
 QProgressBar::chunk {
     background-color: @grass@;
-    border-radius: 4px;
+    border-bottom: 2px solid @grass.deep@;
+    border-radius: 0;
 }
 
 /* ── Lists, tables, trees ───────────────────────────────────────────────── */
@@ -240,7 +340,7 @@ QRadioButton::indicator {
     height: 16px;
     background-color: @block@;
     border: none;
-    border-radius: 4px;
+    border-radius: 2px;
 }
 
 QRadioButton::indicator {
@@ -310,17 +410,18 @@ QStatusBar {
     border: none;
 }
 
-/* Menus float, so they are the one surface with a shadow: the OS draws it. */
+/* A menu is a panel: edged in block.edge, standing on its lip. */
 QMenu {
     color: @bone@;
     background-color: @void.panel@;
-    border: none;
+    border: 1px solid @block.edge@;
+    border-bottom: 4px solid @block.lip@;
     padding: 6px;
 }
 
 QMenu::item {
     padding: 7px 28px 7px 28px;
-    border-radius: 4px;
+    border-radius: 2px;
 }
 
 QMenu::item:selected {
@@ -347,7 +448,7 @@ QTabBar::tab {
     color: @bone.muted@;
     background-color: transparent;
     border: none;
-    border-bottom: 2px solid transparent;
+    border-bottom: 3px solid transparent;
     padding: 8px 14px;
     margin-right: 4px;
     font-family: "@font.display@";
@@ -399,13 +500,13 @@ QScrollBar:horizontal {
 QScrollBar::handle:vertical {
     background-color: @block@;
     min-height: 32px;
-    border-radius: 3px;
+    border-radius: 1px;
 }
 
 QScrollBar::handle:horizontal {
     background-color: @block@;
     min-width: 32px;
-    border-radius: 3px;
+    border-radius: 1px;
 }
 
 QScrollBar::handle:hover {
@@ -437,16 +538,17 @@ QScrollBar::sub-page {
     font-weight: 700;
 }
 
-/* Rail rows: no frame, a filled row for the current page with a grass bar on
-   its left edge (a filled shape, not a rule). */
+/* Rail rows: no block, a filled row for the current page with a grass bar on
+   its left edge. They are places, not actions, so they do not sink. */
 #kubikSidebar QPushButton,
 #kubikSettingsNav QPushButton {
     color: @bone.muted@;
     background-color: transparent;
     border: none;
-    border-left: 3px solid transparent;
+    border-left: 4px solid transparent;
     border-radius: 0;
-    padding: 10px 16px 10px 15px;
+    margin: 0;
+    padding: 10px 16px 10px 14px;
     text-align: left;
     font-family: "@font.display@";
     font-size: 15px;
@@ -487,7 +589,7 @@ QScrollBar::sub-page {
 #kubikPageTitle {
     color: @bone@;
     font-family: "@font.display@";
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 700;
 }
 
@@ -506,7 +608,15 @@ QScrollBar::sub-page {
 #kubikSectionTitle {
     color: @bone@;
     font-family: "@font.display@";
-    font-size: 16px;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+/* A section's kicker: words in grass after a small shaded grass block (KubikEyebrow draws the block). */
+#kubikEyebrow {
+    color: @grass@;
+    font-family: "@font.display@";
+    font-size: 13px;
     font-weight: 600;
 }
 
@@ -515,29 +625,36 @@ QScrollBar::sub-page {
     padding: 6px 10px;
 }
 
+/* The big action of a page (Play, Sign in): the same block, larger. Outer height 46px. */
 QPushButton#kubikHeroPlay {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
-    padding: 12px 36px;
+    padding: 10px 36px 8px 36px;
     min-width: 120px;
 }
 
-/* A sleeping server's "Wake it up on kubik.gg", beside Play: the same height, in the plain button's tone. */
+QPushButton#kubikHeroPlay:focus {
+    padding: 9px 34px 8px 34px;
+}
+
+/* A sleeping server's "Wake it up on kubik.gg", beside Play: the same height, as the plain block. */
 QPushButton#kubikWake {
-    font-size: 15px;
-    padding: 12px 24px;
+    font-size: 16px;
+    padding: 10px 24px 8px 24px;
 }
 
 QPushButton#kubikWake:focus {
-    padding: 10px 22px;
+    padding: 9px 23px 8px 23px;
 }
 
-/* A row in the instance page's "Manage" list: a quiet block that lights up. */
+/* A row in the instance page's "Manage" list: a block panel that lights up and sinks when pressed. */
 QPushButton[kubikRole="row"] {
     color: @bone@;
     background-color: @void.panel@;
-    border-radius: 6px;
-    padding: 14px 16px;
+    border: 1px solid @block@;
+    border-bottom: 4px solid @block.lip@;
+    border-radius: 3px;
+    padding: 13px 16px 10px 16px;
     /* Two lines of text inside. A style-sheet min-height beats setMinimumHeight(), so it lives here. */
     min-height: 48px;
     text-align: left;
@@ -547,17 +664,26 @@ QPushButton[kubikRole="row"] {
 
 QPushButton[kubikRole="row"]:hover {
     background-color: @block@;
+    border-top-color: @block.edge@;
+    border-left-color: @block.edge@;
+    border-right-color: @block.edge@;
 }
 
+QPushButton[kubikRole="row"]:pressed {
+    margin-top: 3px;
+    border-bottom-width: 1px;
+}
+
+/* A server's or an instance's picture: painted with its own slot frame (KubikPaint::drawSlotFrame). */
 #kubikArt {
-    background-color: @void.panel@;
-    border-radius: 6px;
+    background-color: transparent;
 }
 
 /* ── First run and small dialogs ────────────────────────────────────────── */
 
+/* "Step 1 of 2": the wizard's kicker, set like the website's eyebrow. */
 #kubikStepLabel {
-    color: @bone.faint@;
+    color: @grass@;
     font-family: "@font.display@";
     font-size: 13px;
     font-weight: 600;
@@ -576,12 +702,13 @@ QPushButton[kubikRole="row"]:hover {
     font-weight: 700;
 }
 
-/* The server page's address: a card of its own, edged in the accent, the one thing a player may type. */
+/* The server page's address: an inventory slot, the one thing a player may have to type. */
 #kubikAddressCard {
-    background-color: @void.panel@;
-    border: 1px solid @block@;
-    border-left: 3px solid @grass@;
-    border-radius: 8px;
+    background-color: @void@;
+    border: 2px solid @block@;
+    border-top-color: @block.deep@;
+    border-left-color: @block.deep@;
+    border-radius: 2px;
 }
 
 #kubikAddressLabel {
@@ -604,27 +731,19 @@ QPushButton[kubikRole="row"]:hover {
     font-size: 14px;
 }
 
-QPushButton#kubikAddressCopy {
-    color: @bone@;
-    background-color: @block@;
-    border-radius: 6px;
-    padding: 8px 14px;
-}
-
-QPushButton#kubikAddressCopy:hover {
-    background-color: @block.edge@;
-}
-
-/* "How to join": a raised card a step, its picture on top, a numbered block beside its title. */
+/* "How to join": a block panel a step, its picture on top, a numbered grass block beside its title. */
 #kubikJoinStep {
     background-color: @void.panel@;
-    border-radius: 10px;
+    border: 1px solid @block@;
+    border-bottom: 4px solid @block.lip@;
+    border-radius: 3px;
 }
 
 #kubikStepNumber {
     color: @void@;
     background-color: @grass@;
-    border-radius: 6px;
+    border-bottom: 3px solid #046a4d;
+    border-radius: 2px;
     font-family: "@font.display@";
     font-size: 14px;
     font-weight: 700;
@@ -637,10 +756,12 @@ QPushButton#kubikAddressCopy:hover {
     font-weight: 600;
 }
 
-/* Settings › Profiles: one raised row per Minecraft profile. */
+/* Settings › Profiles, and the sign-in page's Minecraft account: one block panel per profile. */
 #kubikProfileRow {
     background-color: @void.panel@;
-    border-radius: 8px;
+    border: 1px solid @block@;
+    border-bottom: 4px solid @block.lip@;
+    border-radius: 3px;
 }
 
 /* A step that worked, said where it is shown: the sign-in page's connected Minecraft account. */
@@ -650,16 +771,18 @@ QPushButton#kubikAddressCopy:hover {
     font-weight: 600;
 }
 
-/* The memory slider: a filled track up to the handle, in the accent. */
+/* The memory slider: a slot for a track, filled with grass up to a block for a handle. */
 QSlider#kubikMemory::groove:horizontal {
-    height: 6px;
-    background-color: @block@;
-    border-radius: 3px;
+    height: 8px;
+    background-color: @void@;
+    border: 1px solid @block@;
+    border-top-color: @block.deep@;
+    border-radius: 2px;
 }
 
 QSlider#kubikMemory::sub-page:horizontal {
     background-color: @grass@;
-    border-radius: 3px;
+    border-radius: 1px;
 }
 
 QSlider#kubikMemory::sub-page:horizontal:disabled {
@@ -671,46 +794,56 @@ QSlider#kubikMemory::handle:horizontal:disabled {
 }
 
 QSlider#kubikMemory::handle:horizontal {
-    width: 18px;
-    height: 18px;
-    margin: -6px 0;
+    width: 14px;
+    height: 20px;
+    margin: -8px 0;
     background-color: @bone@;
-    border-radius: 9px;
+    border-bottom: 3px solid @stone@;
+    border-radius: 2px;
 }
 
-/* Home's "Jump back in": the one raised block above the grid. */
+/* Home's "Jump back in": the chosen server, so its block stands on grass's lip. */
 #kubikHero {
     background-color: @void.panel@;
-    border-radius: 10px;
+    border: 1px solid @block.edge@;
+    border-bottom: 4px solid #046a4d;
+    border-radius: 3px;
 }
 
 #kubikHeroName {
     color: @bone@;
     font-family: "@font.display@";
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
 }
 
 #kubikHero QPushButton#kubikHeroPlay {
-    padding: 9px 30px;
+    padding: 8px 30px 6px 30px;
 }
 
-/* A log: the install details on a server page, the Logs tab of an instance. Mono, on the rail's tone. */
+#kubikHero QPushButton#kubikHeroPlay:focus {
+    padding: 7px 28px 6px 28px;
+}
+
+/* A log: the install details on a server page, the Logs tab of an instance. Mono, in a slot. */
 QPlainTextEdit#kubikLog {
     color: @bone.muted@;
-    background-color: @void.raised@;
-    border: 2px solid @void.raised@;
-    border-radius: 6px;
+    background-color: @void@;
+    border: 2px solid @block@;
+    border-top-color: @block.deep@;
+    border-left-color: @block.deep@;
+    border-radius: 2px;
     padding: 6px 8px;
 }
 
-/* An instance page's tabs: words with the accent under the current one, no box. */
+/* An instance page's tabs: words with a grass bar under the current one, no box. */
 QPushButton#kubikTab {
     color: @bone.muted@;
     background-color: transparent;
     border: none;
-    border-bottom: 2px solid transparent;
+    border-bottom: 3px solid transparent;
     border-radius: 0;
+    margin: 0;
     padding: 6px 0;
     font-family: "@font.display@";
     font-size: 15px;
@@ -746,7 +879,7 @@ QListView#kubikPageList {
 
 QListView#kubikPageList::item {
     color: @bone.muted@;
-    border-left: 3px solid transparent;
+    border-left: 4px solid transparent;
     padding: 8px 12px;
 }
 
@@ -759,4 +892,54 @@ QListView#kubikPageList::item:selected {
     color: @bone@;
     background-color: @void.panel@;
     border-left-color: @grass@;
+}
+
+/* ── The title screen: words on the noon sky ──────────────────────────────
+   KubikSignInPage and the setup wizard's own pages (SetupWizard paints their
+   sky). Bone and grass do not read on it, so its words are in dark ink. */
+
+#kubikTitleScreen QLabel#kubikPageTitle,
+#SetupWizard QLabel#kubikPageTitle {
+    color: @void@;
+}
+
+#kubikTitleScreen QLabel#kubikPageTitle {
+    font-size: 32px;
+}
+
+#kubikTitleScreen QLabel#kubikPageBody,
+#SetupWizard QLabel#kubikPageBody {
+    color: #13213a;
+    font-size: 15px;
+}
+
+#SetupWizard QLabel#kubikPageNote {
+    color: #2c3d5c;
+}
+
+/* The kicker in grass's deepest shade: grass itself is too light on the sky. */
+#SetupWizard QLabel#kubikStepLabel {
+    color: #046a4d;
+}
+
+/* Heart's red is too light for the sky; this is the same red, darkened until it reads there. */
+#kubikTitleScreen QLabel#kubikPageError {
+    color: #8f1d1d;
+    font-weight: 600;
+}
+
+#kubikTitleScreen QPushButton[kubikRole="quiet"],
+#SetupWizard QPushButton[kubikRole="quiet"] {
+    color: #13213a;
+}
+
+#kubikTitleScreen QPushButton[kubikRole="quiet"]:hover,
+#SetupWizard QPushButton[kubikRole="quiet"]:hover {
+    color: @void@;
+    background-color: rgba(255, 255, 255, 0.35);
+}
+
+#kubikTitleScreen QPushButton[kubikRole="quiet"]:focus,
+#SetupWizard QPushButton[kubikRole="quiet"]:focus {
+    border-color: @void@;
 }

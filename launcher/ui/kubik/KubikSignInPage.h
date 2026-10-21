@@ -20,6 +20,8 @@
 
 #include <QWidget>
 
+class KubikSplash;
+class KubikWordmark;
 class QFrame;
 class QLabel;
 class QPushButton;
@@ -29,6 +31,10 @@ class QPushButton;
  * to play the servers on that account, so without it there is nothing else to
  * show. Signing in happens in the browser (KubikAccount); this page says so and
  * waits.
+ *
+ * It is the launcher's title screen, as kubik.gg/launcher opens: the noon sky,
+ * the wordmark with a splash line leaning off its corner, the one action, and
+ * the ground everything stands on (KubikPaint).
  *
  * It also shows the Minecraft account the setup wizard just connected. The
  * sidebar's profile card, which shows it everywhere else, is hidden until this
@@ -43,11 +49,19 @@ class KubikSignInPage : public QWidget {
 
    protected:
     void changeEvent(QEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
+    void paintEvent(QPaintEvent* event) override;
 
    private:
     void retranslate();
     void updateState();
     void updateMinecraft();
+    /** Puts the splash over the wordmark's lower right corner, wherever the layout has put the wordmark. */
+    void placeSplash();
+
+    QWidget* m_column;
+    KubikWordmark* m_wordmark;
+    KubikSplash* m_splash;
 
     QFrame* m_minecraft;
     QLabel* m_minecraftFace;

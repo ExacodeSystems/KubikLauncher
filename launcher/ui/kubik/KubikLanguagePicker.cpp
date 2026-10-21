@@ -29,10 +29,12 @@
 #include "settings/Setting.h"
 #include "settings/SettingsObject.h"
 #include "translations/TranslationsModel.h"
+#include "ui/kubik/KubikPaint.h"
 
 namespace {
 
-constexpr int RADIUS = 8;
+// The lip a card stands on, part of its height.
+constexpr int LIP = 4;
 
 /**
  * The flags are drawn, not shipped as emoji (Windows has no flag emoji) or as
@@ -42,7 +44,7 @@ void paintFlag(QPainter& p, const QRectF& box, const QString& key)
 {
     p.save();
     QPainterPath clip;
-    clip.addRoundedRect(box, 4, 4);
+    clip.addRoundedRect(box, 2, 2);
     p.setClipPath(clip);
 
     if (key == "id") {
@@ -105,14 +107,12 @@ void paintFlag(QPainter& p, const QRectF& box, const QString& key)
     p.restore();
 }
 
-/** The grass disc with a tick that marks the chosen card. */
+/** The grass block with a tick that marks the chosen card. */
 void paintCheck(QPainter& p, const QRectF& disc)
 {
     p.save();
     p.setRenderHint(QPainter::Antialiasing);
-    p.setPen(Qt::NoPen);
-    p.setBrush(KubikBrand::color("grass"));
-    p.drawEllipse(disc);
+    KubikPaint::drawMarker(&p, disc, KubikBrand::color("grass"));
     QPainterPath tick;
     const qreal s = disc.width();
     tick.moveTo(disc.left() + s * 0.28, disc.top() + s * 0.52);
@@ -173,16 +173,21 @@ void KubikLanguageCard::paintEvent(QPaintEvent* /*event*/)
 {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
-    const QRectF card = QRectF(rect());
-
-    QPainterPath shape;
-    shape.addRoundedRect(card, RADIUS, RADIUS);
-    const bool lit = isChecked() || m_hovered || isDown();
-    p.fillPath(shape, KubikBrand::color(lit ? "block" : "void.panel"));
-    if (hasFocus() && m_keyboardFocus) {
-        p.setPen(QPen(KubikBrand::color("grass.deep"), 2));
-        p.drawRoundedRect(card.adjusted(1, 1, -1, -1), RADIUS - 1, RADIUS - 1);
+    // A block: the chosen language stands on grass's lip; under the pointer its border lifts. Held down,
+    // the block sinks into its lip like a button.
+    auto style = isChecked() ? KubikPaint::litPanel() : KubikPaint::panel();
+    if (m_hovered && !isChecked()) {
+        style.border = KubikBrand::color("block.edge");
     }
+    const qreal sink = isDown() ? 3 : 0;
+    style.lipHeight = static_cast<int>(LIP - sink);
+    const QRectF card(0, sink, width(), height() - LIP);
+    KubikPaint::drawPanel(&p, card, style);
+    if (hasFocus() && m_keyboardFocus) {
+        p.setPen(QPen(KubikBrand::color("grass"), 2));
+        p.drawRoundedRect(card.adjusted(1, 1, -1, -1), 2, 2);
+    }
+    p.translate(card.topLeft());
 
     QFont nameFont(KubikBrand::displayFamily());
     QFont lineFont(KubikBrand::bodyFamily());

@@ -41,6 +41,7 @@
 #include "minecraft/mod/Mod.h"
 #include "minecraft/mod/ModFolderModel.h"
 #include "ui/kubik/KubikConfirmDialog.h"
+#include "ui/kubik/KubikPaint.h"
 
 using KubikBrand::color;
 
@@ -128,9 +129,13 @@ void KubikModDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
-    QPainterPath shape;
-    shape.addRoundedRect(QRectF(rect), 6, 6);
-    painter->fillPath(shape, color(option.state & QStyle::State_MouseOver ? "block" : "void.panel"));
+    // A block on a short lip (a list keeps its rows close); under the pointer its border lifts.
+    auto style = KubikPaint::panel();
+    style.lipHeight = 2;
+    if (option.state & QStyle::State_MouseOver) {
+        style.border = color("block.edge");
+    }
+    KubikPaint::drawPanel(painter, QRectF(rect).adjusted(0, 0, 0, -2), style);
 
     // The mod's own icon (read from its jar once, then cached), or the loader's.
     const QRect iconRect(rect.left() + PAD, rect.center().y() - ICON / 2 + 1, ICON, ICON);
@@ -147,27 +152,32 @@ void KubikModDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     const QFont smallFont = font(KubikBrand::bodyFamily(), 12, QFont::Normal);
     const QFontMetrics small(smallFont);
     if (managed) {
+        // A tag, as the website draws its chips: corner pixels knocked out, the words as a label.
         const QString badge = tr("Server mod");
-        const QFont badgeFont = font(KubikBrand::displayFamily(), 12, QFont::DemiBold);
+        QFont badgeFont = font(KubikBrand::displayFamily(), 11, QFont::DemiBold);
+        badgeFont.setCapitalization(QFont::AllUppercase);
+        badgeFont.setLetterSpacing(QFont::AbsoluteSpacing, 0.9);
         const int width = QFontMetrics(badgeFont).horizontalAdvance(badge) + 20;
-        const QRect pill(right - width + 1, rect.center().y() - 11, width, 22);
-        QPainterPath path;
-        path.addRoundedRect(QRectF(pill), 11, 11);
-        painter->fillPath(path, color("void"));
+        const QRect pill(right - width + 1, rect.center().y() - 12, width, 22);
+        KubikPaint::drawTag(painter, QRectF(pill), color("void"), color("grass.dark"));
         painter->setPen(color("grass"));
         painter->setFont(badgeFont);
         painter->drawText(pill, Qt::AlignCenter, badge);
         right = pill.left() - 12;
     } else {
         const QRect toggle = switchRect(rect);
+        // A lever in a slot: the track recessed, the knob a small block that slides to the lit end.
         QPainterPath track;
-        track.addRoundedRect(QRectF(toggle), SWITCH_H / 2.0, SWITCH_H / 2.0);
-        painter->fillPath(track, color(enabled ? "grass" : "block"));
+        track.addRoundedRect(QRectF(toggle), 2, 2);
+        painter->fillPath(track, color(enabled ? "grass" : "void"));
+        if (!enabled) {
+            painter->setPen(QPen(color("block"), 1));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawRoundedRect(QRectF(toggle).adjusted(0.5, 0.5, -0.5, -0.5), 2, 2);
+        }
         const qreal knob = SWITCH_H - 6;
         const qreal x = enabled ? toggle.right() - 3 - knob + 1 : toggle.left() + 3;
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(enabled ? color("void") : color("bone.muted"));
-        painter->drawEllipse(QRectF(x, toggle.top() + 3, knob, knob));
+        KubikPaint::drawMarker(painter, QRectF(x, toggle.top() + 3, knob, knob), enabled ? color("void.panel") : color("bone.muted"));
 
         const QRect remove = removeRect(rect);
         painter->setFont(font(KubikBrand::displayFamily(), 13, QFont::DemiBold));

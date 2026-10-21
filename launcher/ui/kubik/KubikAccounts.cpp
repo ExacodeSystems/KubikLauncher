@@ -103,7 +103,8 @@ QPixmap avatar(const MinecraftAccountPtr& account, int size)
     p.setRenderHint(QPainter::Antialiasing);
     const QRectF box(0, 0, size, size);
     QPainterPath shape;
-    shape.addRoundedRect(box, size * 0.22, size * 0.22);
+    // A face is a block too: square, its corners only just softened.
+    shape.addRoundedRect(box, 3, 3);
     p.setClipPath(shape);
 
     const QPixmap face = account ? account->getFace(int(size * dpr), int(size * dpr)) : QPixmap();

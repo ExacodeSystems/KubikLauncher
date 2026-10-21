@@ -932,6 +932,8 @@ SET(LAUNCHER_SOURCES
     ui/kubik/KubikJoinShots.h
     ui/kubik/KubikLanguagePicker.cpp
     ui/kubik/KubikLanguagePicker.h
+    ui/kubik/KubikPaint.cpp
+    ui/kubik/KubikPaint.h
     ui/kubik/KubikProfileCard.cpp
     ui/kubik/KubikProfileCard.h
     ui/kubik/KubikProfilesPage.cpp
@@ -948,6 +950,8 @@ SET(LAUNCHER_SOURCES
     ui/kubik/KubikSidebar.h
     ui/kubik/KubikSignInPage.cpp
     ui/kubik/KubikSignInPage.h
+    ui/kubik/KubikTitle.cpp
+    ui/kubik/KubikTitle.h
     ui/kubik/KubikFlowLayout.cpp
     ui/kubik/KubikFlowLayout.h
 

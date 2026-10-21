@@ -21,21 +21,22 @@
 #include <QFontMetrics>
 #include <QIcon>
 #include <QPainter>
-#include <QPainterPath>
 
 #include "BaseInstance.h"
 #include "InstanceList.h"
 #include "kubik/KubikBrand.h"
 #include "ui/instanceview/InstanceView.h"
 #include "ui/kubik/KubikInstanceInfo.h"
+#include "ui/kubik/KubikPaint.h"
 
 using KubikBrand::color;
 
 namespace {
 
 // The tile's measurements. The art field is half as tall as the tile is wide, so tiles keep their
-// shape as the grid stretches them; everything under it is a fixed-height text block.
-constexpr int RADIUS = 6;
+// shape as the grid stretches them; everything under it is a fixed-height text block, and under that
+// the lip the block stands on.
+constexpr int LIP = 4;
 constexpr int PAD = 14;
 constexpr int NAME_HEIGHT = 22;
 constexpr int LINE_HEIGHT = 18;
@@ -50,7 +51,8 @@ int artHeight(int width)
 
 QRect artRect(const QRect& tile)
 {
-    return QRect(tile.left(), tile.top(), tile.width(), artHeight(tile.width()));
+    // Inside the block's 1px border.
+    return QRect(tile.left() + 1, tile.top() + 1, tile.width() - 2, artHeight(tile.width()));
 }
 
 QFont font(const QString& family, int pixelSize, QFont::Weight weight)
@@ -91,7 +93,7 @@ QSize KubikInstanceDelegate::sizeHint(const QStyleOptionViewItem& option, [[mayb
 {
     const auto* view = qobject_cast<const InstanceView*>(option.widget);
     const int width = view ? view->itemWidth() : DEFAULT_WIDTH;
-    return QSize(width, artHeight(width) + TEXT_BLOCK);
+    return QSize(width, artHeight(width) + TEXT_BLOCK + LIP);
 }
 
 void KubikInstanceDelegate::updateEditorGeometry(QWidget* editor,
@@ -116,14 +118,15 @@ void KubikInstanceDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
-    // The tile, and its art field one tone below it. Lit (hovered or selected) both step up.
-    QPainterPath shape;
-    shape.addRoundedRect(QRectF(tile), RADIUS, RADIUS);
-    painter->fillPath(shape, color(lit ? "block" : "void.panel"));
+    // The block, and its art field one tone below it. Lit (hovered or selected), it stands on grass's lip.
+    const QRectF body(tile.left(), tile.top(), tile.width(), tile.height() - LIP);
+    const auto style = lit ? KubikPaint::litPanel() : KubikPaint::panel();
+    KubikPaint::drawPanel(painter, body, style);
     painter->save();
-    painter->setClipPath(shape);
+    painter->setClipPath(KubikPaint::panelShape(body.adjusted(1, 1, -1, -1), style));
     painter->fillRect(art, color(lit ? "void.panel" : "void.raised"));
     painter->restore();
+    painter->fillRect(QRect(art.left(), art.bottom() + 1, art.width(), 1), color(lit ? "block.edge" : "block"));
 
     const int side = qMin(96, art.height() * 62 / 100);
     QRect iconRect(0, 0, side, side);
@@ -134,12 +137,11 @@ void KubikInstanceDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
     // Play under the pointer, on the selected tile, and always while running (as Stop).
     if (lit || running) {
         const QRect play = playRect(tile);
-        QPainterPath button;
-        button.addRoundedRect(QRectF(play), 4, 4);
-        painter->fillPath(button, color(running ? "heart" : "grass"));
+        KubikPaint::drawButton(painter, QRectF(play), running ? color("heart") : KubikPaint::primaryFill(false),
+                               running ? QColor(0x8f, 0x24, 0x24) : KubikPaint::primaryLip());
         painter->setPen(color("void"));
         painter->setFont(font(KubikBrand::displayFamily(), 14, QFont::Bold));
-        painter->drawText(play, Qt::AlignCenter, running ? tr("Stop") : tr("Play"));
+        painter->drawText(KubikPaint::buttonFace(QRectF(play)), Qt::AlignCenter, running ? tr("Stop") : tr("Play"));
     }
 
     // The words under the art. While Play shows, the two lines beside it make room for it.

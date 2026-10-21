@@ -30,15 +30,17 @@
 #include "icons/IconList.h"
 #include "kubik/KubikBrand.h"
 #include "kubik/KubikProfiles.h"
+#include "ui/kubik/KubikPaint.h"
 
 using KubikBrand::color;
 
 namespace {
 
-// The same measurements as an instance tile (KubikInstanceDelegate.cpp).
+// The same measurements as an instance tile (KubikInstanceDelegate.cpp). A tile is a block: its body,
+// and under it the lip it stands on, LIP px tall and part of the tile's height.
 constexpr int TILE_MIN_WIDTH = 220;
 constexpr int SPACING = 16;
-constexpr int RADIUS = 6;
+constexpr int LIP = 4;
 constexpr int PAD = 14;
 constexpr int NAME_HEIGHT = 22;
 constexpr int LINE_HEIGHT = 18;
@@ -47,7 +49,19 @@ constexpr int PLAY_WIDTH = 76;
 
 QRect artRect(const QRect& tile)
 {
-    return QRect(tile.left(), tile.top(), tile.width(), tile.width() / 2);
+    // Inside the block's 1px border.
+    return QRect(tile.left() + 1, tile.top() + 1, tile.width() - 2, tile.width() / 2);
+}
+
+QFont labelFont()
+{
+    // The website's `.label`: short uppercase words in the display face, tracked just apart.
+    QFont f(KubikBrand::displayFamily());
+    f.setPixelSize(11);
+    f.setWeight(QFont::DemiBold);
+    f.setCapitalization(QFont::AllUppercase);
+    f.setLetterSpacing(QFont::AbsoluteSpacing, 0.9);
+    return f;
 }
 
 QFont font(const QString& family, int pixelSize, QFont::Weight weight)
@@ -196,7 +210,7 @@ KubikServerDelegate::KubikServerDelegate(QObject* parent) : QStyledItemDelegate(
 
 int KubikServerDelegate::tileHeight(int width)
 {
-    return width / 2 + TEXT_BLOCK;
+    return width / 2 + TEXT_BLOCK + LIP;
 }
 
 QRect KubikServerDelegate::playRect(const QRect& tile)
@@ -309,41 +323,40 @@ void KubikServerDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
+    // The block: lit (a lifted border on grass's lip) under the pointer.
     const auto* live = index.data(KubikServerModel::LiveRole).value<const KubikServerLive*>();
-    QPainterPath shape;
-    shape.addRoundedRect(QRectF(tile), RADIUS, RADIUS);
-    painter->fillPath(shape, color(lit ? "block" : "void.panel"));
+    const QRectF body(tile.left(), tile.top(), tile.width(), tile.height() - LIP);
+    const auto style = lit ? KubikPaint::litPanel() : KubikPaint::panel();
+    KubikPaint::drawPanel(painter, body, style);
     painter->save();
-    painter->setClipPath(shape);
+    painter->setClipPath(KubikPaint::panelShape(body.adjusted(1, 1, -1, -1), style));
     paintArt(painter, art, *server, live, lit);
     painter->restore();
+    painter->fillRect(QRect(art.left(), art.bottom() + 1, art.width(), 1), color(lit ? "block.edge" : "block"));
 
-    // Status, in the art field's corner: a dot that carries the colour, and words that carry the meaning.
     const QFont smallFont = font(KubikBrand::bodyFamily(), 13, QFont::Normal);
     const QFontMetrics small(smallFont);
+
+    // Status, in the art field's corner: a tag with its corner pixels knocked out, a square that carries
+    // the colour, and words that carry the meaning.
     {
+        const QFont tagFont = labelFont();
         const QString text = statusLine(*server, live);
-        const int pillWidth = 10 + 8 + 6 + small.horizontalAdvance(text) + 10;
-        const QRect pill(art.left() + 10, art.top() + 10, pillWidth, 24);
-        QPainterPath path;
-        path.addRoundedRect(QRectF(pill), 12, 12);
-        painter->fillPath(path, color("void"));
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(statusColour(*server));
-        painter->drawEllipse(QRectF(pill.left() + 10, pill.center().y() - 3.5, 8, 8));
+        const int tagWidth = 8 + 8 + 6 + QFontMetrics(tagFont).horizontalAdvance(text) + 9;
+        const QRect tag(art.left() + 9, art.top() + 9, tagWidth, 24);
+        KubikPaint::drawTag(painter, QRectF(tag), QColor(9, 11, 12, 230), color("block.edge"));
+        KubikPaint::drawMarker(painter, QRectF(tag.left() + 8, tag.center().y() - 3.5, 8, 8), statusColour(*server));
         painter->setPen(color("bone"));
-        painter->setFont(smallFont);
-        painter->drawText(pill.adjusted(10 + 8 + 6, 0, 0, 0), Qt::AlignLeft | Qt::AlignVCenter, text);
+        painter->setFont(tagFont);
+        painter->drawText(tag.adjusted(8 + 8 + 6, 0, 0, 0), Qt::AlignLeft | Qt::AlignVCenter, text);
     }
 
     if (lit && playable) {
         const QRect play = playRect(tile);
-        QPainterPath button;
-        button.addRoundedRect(QRectF(play), 4, 4);
-        painter->fillPath(button, color("grass"));
+        KubikPaint::drawButton(painter, QRectF(play), KubikPaint::primaryFill(false), KubikPaint::primaryLip());
         painter->setPen(color("void"));
         painter->setFont(font(KubikBrand::displayFamily(), 14, QFont::Bold));
-        painter->drawText(play, Qt::AlignCenter, tr("Play"));
+        painter->drawText(KubikPaint::buttonFace(QRectF(play)), Qt::AlignCenter, tr("Play"));
     }
 
     const int textLeft = tile.left() + PAD;
@@ -379,9 +392,9 @@ void KubikServerDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     // The keyboard's place in the grid (Enter opens it, Space plays it).
     const auto* grid = qobject_cast<const KubikServerGrid*>(option.widget);
     if ((option.state & QStyle::State_HasFocus) && grid && grid->keyboardFocus()) {
-        painter->setPen(QPen(color("grass.deep"), 2));
+        painter->setPen(QPen(color("grass"), 2));
         painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(QRectF(tile).adjusted(1, 1, -1, -1), RADIUS - 1, RADIUS - 1);
+        painter->drawRoundedRect(body.adjusted(1, 1, -1, -1), 2, 2);
     }
 
     painter->restore();

@@ -33,6 +33,7 @@
 #include "kubik/KubikBrand.h"
 #include "minecraft/auth/AccountList.h"
 #include "ui/kubik/KubikAccounts.h"
+#include "ui/kubik/KubikPaint.h"
 
 namespace {
 
@@ -116,10 +117,14 @@ void KubikProfileCard::paintEvent(QPaintEvent* /*event*/)
 {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
-    const QRectF card = QRectF(rect());
-    QPainterPath shape;
-    shape.addRoundedRect(card, 8, 8);
-    p.fillPath(shape, KubikBrand::color(m_hovered || m_menuOpen || isDown() ? "block" : "void.panel"));
+    // A block on its lip, like every card; under the pointer, or with its menu open, it lights up.
+    auto style = KubikPaint::panel();
+    if (m_hovered || m_menuOpen || isDown()) {
+        style.fill = KubikBrand::color("block");
+        style.border = KubikBrand::color("block.edge");
+    }
+    const QRectF card(0, 0, width(), height() - style.lipHeight);
+    KubikPaint::drawPanel(&p, card, style);
 
     const auto account = KubikAccounts::current();
     const QRectF avatarBox(PAD, (card.height() - AVATAR) / 2, AVATAR, AVATAR);
@@ -128,7 +133,7 @@ void KubikProfileCard::paintEvent(QPaintEvent* /*event*/)
     } else {
         // No account yet: a plus on a grass-tinted square, the card's call to add one.
         QPainterPath box;
-        box.addRoundedRect(avatarBox, AVATAR * 0.22, AVATAR * 0.22);
+        box.addRoundedRect(avatarBox, 3, 3);
         p.fillPath(box, KubikBrand::color("block"));
         p.setPen(QPen(KubikBrand::color("grass"), 2.5, Qt::SolidLine, Qt::RoundCap));
         const QPointF c = avatarBox.center();
