@@ -94,7 +94,7 @@ jobs:
           AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
           AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ vars.R2_BUCKET || 'kubik-media' }}
+          R2_BUCKET: ${{ vars.R2_BUCKET || 'kubik-assets' }}
           CDN_URL: ${{ vars.LAUNCHER_CDN_URL || 'https://cdn.kubik.gg/launcher' }}
         run: |
           if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] || [ -z "$R2_ACCOUNT_ID" ]; then
